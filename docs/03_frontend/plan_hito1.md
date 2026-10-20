@@ -60,6 +60,15 @@ Prueba end-to-end automatizada en Chrome (Playwright): **24/24 comprobaciones**,
 - Guardar → aparece en Mis viajes → persiste tras cerrar sesión → se puede abrir su detalle.
 - No regresión: los botones `[Mock]` siguen funcionando y no hay errores de JavaScript.
 
+## 5.1 Mejora posterior del campo Destino (Hito 4)
+
+El 20 Oct 2026 el responsable aprobó añadir al formulario de Crear viaje:
+- autocompletado de los destinos del Perú;
+- validación al salir del campo;
+- normalización del nombre ("cusco" → "Cusco").
+
+Detalle y pruebas en `docs/06_despliegue/plan_hito_04.md` (sección 8.2).
+
 ## 6. Aprobación
 
 El responsable aprobó el Hito 1 el 19 Oct 2026. Las evidencias (capturas) se descartaron por decisión del responsable; la carpeta `evidencias/` se eliminó del proyecto el 20 Oct 2026.

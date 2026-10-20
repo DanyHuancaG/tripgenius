@@ -113,6 +113,29 @@ const Viaje = {
   },
 };
 
+/**
+ * Valida el destino contra la lista del Perú, marca el campo y, si es válido,
+ * lo normaliza al nombre oficial ("cusco, peru" → "Cusco").
+ * Devuelve el destino oficial o null.
+ */
+const validarDestino = () => {
+  const destino    = document.getElementById('destino');
+  const destinoErr = document.getElementById('destino-error');
+  const destinoPeru = buscarDestinoPeru(destino.value);
+  let mensaje = null;
+  if (!destino.value.trim()) {
+    mensaje = 'Ingresa un destino dentro del Perú.';
+  } else if (!destinoPeru) {
+    mensaje = 'Elige un destino de la lista. Por ahora TripGenius solo cubre destinos del Perú (ej: Cusco, Arequipa, Iquitos).';
+  } else {
+    destino.value = destinoPeru;
+  }
+  destino.classList.toggle('border-red-400', !!mensaje);
+  destinoErr.classList.toggle('hidden', !mensaje);
+  if (mensaje) destinoErr.textContent = mensaje;
+  return destinoPeru;
+};
+
 /** ── Validación del formulario ── */
 document.addEventListener('DOMContentLoaded', () => {
   Sesion.requerir();   // página privada
@@ -120,28 +143,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('viaje-form');
   if (!form) return;
 
+  // Autocompletado: sugerencias con los destinos que acepta el servidor
+  document.getElementById('destinos-peru').innerHTML =
+    [...DESTINOS_PERU].sort((a, b) => a.localeCompare(b, 'es'))
+      .map(d => `<option value="${escapeHtml(d)}"></option>`).join('');
+
+  // Aviso inmediato al salir del campo (si se escribió algo)
+  document.getElementById('destino').addEventListener('blur', (e) => {
+    if (e.target.value.trim()) validarDestino();
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     let valid = true;
 
     // Destino
-    const destino    = document.getElementById('destino');
-    const destinoErr = document.getElementById('destino-error');
-    const destinoPeru = buscarDestinoPeru(destino.value);
-    if (!destino.value.trim()) {
-      destinoErr.textContent = 'Ingresa un destino dentro del Perú.';
-      destino.classList.add('border-red-400');
-      destinoErr.classList.remove('hidden');
-      valid = false;
-    } else if (!destinoPeru) {
-      destinoErr.textContent = 'Por ahora TripGenius solo cubre destinos dentro del Perú (ej: Cusco, Arequipa, Iquitos).';
-      destino.classList.add('border-red-400');
-      destinoErr.classList.remove('hidden');
-      valid = false;
-    } else {
-      destino.classList.remove('border-red-400');
-      destinoErr.classList.add('hidden');
-    }
+    const destinoPeru = validarDestino();
+    if (!destinoPeru) valid = false;
 
     // Días
     const dias    = document.getElementById('dias');

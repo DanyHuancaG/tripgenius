@@ -149,7 +149,53 @@ Prueba dinámica, simulando Pages (`src/` servido en `http://127.0.0.1:5597/trip
 | 2 | Actualizar `src/README.md` (dice "Frontend Mock") y la sección "Estado actual" de `CLAUDE.md` (dice "Aplicación aún no implementada"), que se publicarán | ✅ Actualizados (autorizado por el responsable) |
 | 3 | Decidir si se mantiene la IP privada en la documentación | ✅ Reemplazada por "IP de la red local" |
 
-## 8. Limitaciones conocidas al publicar
+## 8. Ejecución del despliegue (20 Oct 2026)
+
+Revisión aprobada por el responsable ("SI DALE").
+
+| Paso | Resultado |
+|---|---|
+| `.github/workflows/pages.yml` | `permissions: {}` global. El job `build` solo tiene `contents: read`; el job `deploy` solo `pages: write` + `id-token: write`. Acciones fijadas por SHA (`checkout` v7.0.1, `upload-pages-artifact` v5.0.0, `deploy-pages` v5.0.1). `persist-credentials: false`. Publica `path: src`. Se quitó `configure-pages`, innecesaria sin un generador de sitios |
+| Primer commit `068ffc8` | 38 archivos. `supabase/.temp/` excluido. Escaneo del contenido preparado: sin secretos, contraseñas, IPs privadas ni datos personales. Autor con el correo *noreply* de GitHub, no el correo personal |
+| CORS (condición 3) | `ALLOWED_ORIGINS` + `https://danyhuancag.github.io` (sin ruta). Verificado: se acepta Pages, se mantienen los orígenes locales y se rechaza `https://danyhuancag.github.io.evil.example` |
+| Repositorio | https://github.com/DanyHuancaG/tripgenius (público). Pages con `build_type: workflow` |
+| Ejecución del flujo | Run `39453099196`: build ✓, deploy ✓ |
+| Solo `src/` publicado (condición 6) | 200 en `/tripgenius/`, las 5 páginas, `js/*` y `README.md` (el de `src/`). **404** en `CLAUDE.md`, `docs/…`, `supabase/…`, `.github/…` y `src/…` |
+
+### 8.1 Pruebas en la URL pública (condición 8), primera ronda (20 Oct 2026)
+
+Chrome automatizado contra `https://danyhuancag.github.io/tripgenius/`, con `usuario.e`. Dos ejecuciones:
+
+| Prueba | Resultado |
+|---|---|
+| Carga por HTTPS bajo `/tripgenius/` | ✅ |
+| Sin sesión → login (dashboard, crear viaje, itinerario) | ✅ |
+| Credenciales incorrectas → mensaje neutro | ✅ |
+| Login → Mis viajes con el correo del usuario | ✅ |
+| Botón deshabilitado mientras genera | ✅ |
+| Petición a la Edge Function desde Pages (CORS) | ✅ La petición llega a la función (no hay bloqueo de CORS) |
+| **Generación con Gemini** | ⚠ **503 controlado en las 2 ejecuciones** (Gemini saturado). Se mostró el mensaje con los intentos restantes y se conservó el formulario |
+| Guardar → Mis viajes → cerrar sesión → volver → recuperar | ⏳ Pendiente: depende de una generación exitosa |
+| API con JWT: viaje ajeno por id → vacío; solo viajes propios; INSERT directo en `viajes` y en `generaciones_log` rechazado; `token_generacion` ilegible; `iniciar_generacion` desde el cliente rechazado; token inventado → 403; visitante sin login sin acceso | ✅ 8/8 |
+| Límite diario (condición 7) | ✅ Intacto: cuenta los intentos fallidos (2 de 5) |
+| Sin errores JS | ✅ |
+| Registro + confirmación de correo desde la URL pública | ⏳ La hace el responsable con su correo real. Primer intento rechazado por el límite de correos de Supabase (`over_email_send_rate_limit`, unos 2 por hora para todo el proyecto). **Decisión del responsable:** esperar 1 hora y hacer un único intento (sin SMTP propio) |
+
+## 8.2 Cambio de alcance aprobado: autocompletado y validación inmediata del destino
+
+> **Aprobado por el responsable (20 Oct 2026)** como excepción explícita a "sin funcionalidades nuevas". Motivo: el campo Destino aceptaba texto libre y solo avisaba al pulsar "Generar".
+
+| Aspecto | Detalle |
+|---|---|
+| Autocompletado | `<datalist id="destinos-peru">` nativo, sin librerías, con los 62 destinos de `DESTINOS_PERU`, ordenados alfabéticamente |
+| Validación inmediata | Al salir del campo (`blur`), si el texto no es un destino de la lista: borde rojo y "Elige un destino de la lista…" |
+| Normalización | Se corrige al nombre oficial: "cusco, peru" → "Cusco"; "mancora" → "Máncora" |
+| Bloqueo | Sin cambios: no se envía la solicitud con un destino inválido. El servidor sigue validando con `private.destinos_peru()` |
+| Archivos | `src/crear-viaje.html` (datalist + carga de `comun.js`) y `src/js/viaje.js` (`validarDestino()`) |
+| Sin cambios en | Base de datos, RLS, Edge Function, token y límite diario |
+| Pruebas | 18/18 en Chrome simulando Pages. Sugerencias, aviso para "París", "Ciudad Inventada" y "asdfgh", normalización, bloqueo al enviar (sin llamada a la IA), envío con el nombre oficial y formulario conservado. La llamada a la IA se interceptó, sin consumir cupo. La lista del frontend es **idéntica** a la del servidor (62 = 62) |
+
+## 9. Limitaciones conocidas al publicar
 
 | Limitación | Efecto | Mitigación |
 |---|---|---|

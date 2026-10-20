@@ -78,8 +78,10 @@
             <label class="block text-sm font-semibold text-gray-700 mb-1" for="destino">
               Destino <span class="text-gray-400 font-normal">(dentro del Perú)</span>
             </label>
-            <input id="destino" type="text" placeholder="Ej: Cusco, Arequipa, Iquitos…"
+            <input id="destino" type="text" list="destinos-peru" autocomplete="off" placeholder="Escribe y elige: Cusco, Arequipa, Iquitos…"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            <!-- Sugerencias: las llena viaje.js con la misma lista que valida el servidor -->
+            <datalist id="destinos-peru"></datalist>
             <p id="destino-error" class="hidden text-red-500 text-xs mt-1">Ingresa un destino dentro del Perú.</p>
           </div>
 
@@ -184,6 +186,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
+  <script src="js/comun.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/mock-store.js"></script>
   <script src="js/viaje.js"></script>

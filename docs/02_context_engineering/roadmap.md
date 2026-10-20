@@ -13,7 +13,7 @@
 ✅ Hito 1 — Frontend Mock        COMPLETADO
 ✅ Hito 2 — Persistencia         COMPLETADO
 ✅ Hito 3 — IA Integrada         COMPLETADO
-⏳ Hito 4 —  
+🟡 Hito 4 — Publicación          EN CURSO
 ```
 
 ---
@@ -159,21 +159,29 @@ Flujo completo con IA real: login → configurar → generar → visualizar → 
 ---
 
 ## 🚀 Hito 4 — Publicación
-**Estado: ⏳ Pendiente**
+**Estado: 🟡 En curso — app publicada; faltan pruebas que dependen de Gemini y del correo de registro**
+**Plan detallado:** `docs/06_despliegue/plan_hito_04.md`
 
-### Decisiones previas a confirmar
-- [ ] **P3:** Plataforma de hosting definitiva
+### Decisiones
+- [x] **P3:** GitHub Pages (`https://danyhuancag.github.io/tripgenius/`), repositorio público `DanyHuancaG/tripgenius`
+- [x] GitHub Actions publica solo `src/`, con permisos mínimos
+- [x] **Cambio de alcance aprobado:** autocompletado y validación inmediata del destino (plan, sección 8.2)
 
 ### Tareas
-- [ ] Inicializar repositorio Git
-- [ ] Revisar `.gitignore` (`.env*`, secretos, `node_modules`)
-- [ ] Subir a GitHub — verificar que no hay secretos expuestos
-- [ ] Configurar variables de entorno en la plataforma de hosting
-- [ ] Deploy y verificación desde URL pública
-- [ ] Smoke test completo end-to-end con dos usuarios distintos:
-  - [ ] Login → crear → generar → guardar → cerrar sesión → volver → consultar
-  - [ ] Usuario B no puede ver datos del usuario A
-- [ ] Preparar capturas y evidencias para Demo Day
+- [x] Inicializar repositorio Git
+- [x] Revisar `.gitignore` (`.env*`, secretos, `node_modules`, `supabase/.temp/`)
+- [x] Subir a GitHub tras revisar que no haya secretos expuestos (escaneo del contenido preparado)
+- [x] Cambiar las contraseñas débiles de las cuentas de prueba (b, c y d)
+- [x] CORS con `https://danyhuancag.github.io`
+- [ ] Supabase Auth: Site URL y Redirect URLs públicas (responsable)
+- [x] Deploy y verificación de la URL pública (carga, rutas, solo `src/`)
+- [ ] Smoke test completo end-to-end:
+  - [x] Sin sesión → login · credenciales incorrectas · login · seguridad por API (8/8)
+  - [ ] Generar con Gemini → guardar → cerrar sesión → volver → consultar (Gemini saturado: 503 controlado)
+  - [ ] Registro + confirmación de correo (límite de correos de Supabase)
+  - [x] Un usuario no puede ver los datos de otro
+- [ ] Viaje real guardado como respaldo para el Demo Day
+- [ ] Cambiar la contraseña de `usuario.e` al terminar las pruebas
 
 ### Criterio de salida
 MVP accesible en URL pública. Flujo completo y aislamiento de datos verificados.
