@@ -15,7 +15,7 @@
 | D3 | Autenticación | **Obligatoria** — Supabase Auth (email + confirmación) |
 | D4 | Moneda | **PEN (S/)** — excluye transporte hasta el destino |
 | D5 | Backend seguro | **Supabase Edge Functions** (Deno/TypeScript) |
-| D6 | Proveedor de IA | **Gemini Flash** (provisional, configurable por variable de entorno) |
+| D6 | Proveedor de IA | **Claude (Anthropic)** como principal y **Gemini** de respaldo automático, configurables por variables de entorno (cambio aprobado el 20 Oct 2026; ver `plan_hito_03.md`, sección 2.1) |
 | D7 | Límite de generación | **5 solicitudes por usuario por día** (contabiliza intentos, no solo guardados) |
 | D8 | Paleta visual | **Azul profundo + Turquesa + Blanco** — interfaz moderna en español |
 | D9 | Persistencia | **Función PostgreSQL via RPC** — transacción atómica |
@@ -27,8 +27,8 @@
 
 | # | Decisión | Por definir en |
 |---|---|---|
-| P1 | Modelo exacto de Gemini Flash | Inicio Hito 3 |
-| P2 | Política de rotación de la API Key de Gemini | Inicio Hito 3 |
+| P1 | Modelo exacto de IA ✅ | Resuelto: Claude `claude-opus-5-5` (principal) → Gemini (respaldo) |
+| P2 | Política de rotación de las API Keys (Anthropic y Gemini) ✅ | Resuelto en Hito 3: Supabase Secrets, rotación periódica |
 | P3 | Plataforma de hosting definitiva | Inicio Hito 4 |
 | P4 | Componentes visuales detallados ✅ | Aprobado al iniciar Hito 1 |
 
@@ -57,7 +57,7 @@ TRIPGENIUS/
 │   ├── 04_backend_supabase/
 │   │   └── plan_hito2.md                      # Hito 2 — Supabase, RLS, RPC
 │   └── 05_integracion_ia/
-│       ├── plan_hito_03.md                    # Hito 3 — IA con Gemini
+│       ├── plan_hito_03.md                    # Hito 3 — IA (Claude + Gemini de respaldo)
 │       ├── itinerary_schema.json              # Contrato JSON del itinerario
 │       └── system_prompt_itinerario.md        # Diseño del prompt de sistema
 │
@@ -65,7 +65,7 @@ TRIPGENIUS/
 │   ├── config.toml                            # verify_jwt = false (JWT verificado en la función)
 │   ├── functions/
 │   │   └── generar-itinerario/
-│   │       ├── index.ts                       # JWT, cupo atómico, Gemini, validación, token
+│   │       ├── index.ts                       # JWT, cupo atómico, Claude/Gemini, validación, token
 │   │       ├── prompt.ts                      # Prompt de sistema
 │   │       └── esquema.ts                     # Esquema JSON de salida estructurada
 │   └── migrations/
@@ -102,7 +102,7 @@ flowchart TD
     E --> F{¿Rate limit o error?}
     F -- Límite alcanzado --> G[Mensaje 429 + conserva formulario]
     G --> C
-    F -- Error Gemini --> H[Mensaje error + reintentar]
+    F -- Error de la IA --> H[Mensaje error + reintentar]
     H --> E
     F -- OK --> I[Visualizar itinerario en pantalla]
     I --> J{¿El usuario decide guardar?}
@@ -158,7 +158,7 @@ flowchart TD
 | `user_id` | `uuid` | FK → `auth.users.id`, NOT NULL | Para RLS directo |
 | `costo_total_estimado` | `numeric(10,2)` | CHECK (>= 0) | Suma de actividades estimadas |
 | `advertencia_presupuesto` | `boolean` | NOT NULL, default `false` | True si costo supera presupuesto |
-| `json_raw` | `jsonb` | NOT NULL | Respuesta validada de Gemini |
+| `json_raw` | `jsonb` | NOT NULL | Respuesta validada de la IA |
 | `created_at` | `timestamptz` | default `now()` | Fecha de guardado |
 
 ### 3.4 `actividades`
@@ -283,8 +283,8 @@ Límite de 5 solicitudes/usuario/día en `generaciones_log`. Contabiliza **inten
 | Situación | ¿Cuenta? |
 |---|:---:|
 | Generación exitosa | ✅ |
-| Fallo de Gemini (503) | ✅ |
-| JSON inválido de Gemini | ✅ |
+| Fallo del proveedor de IA (503) | ✅ |
+| JSON inválido de la IA | ✅ |
 | JWT inválido | ❌ |
 | Datos inválidos (bloqueado en frontend) | ❌ |
 | Usuario no guarda el resultado | ✅ |
@@ -300,7 +300,7 @@ sequenceDiagram
     participant EF1 as generar-itinerario
     participant EF2 as guardar-itinerario
     participant DB as Supabase DB
-    participant GM as Gemini Flash
+    participant GM as IA (Claude → Gemini)
 
     U->>FE: Completa formulario → Generar
     FE->>EF1: POST + JWT
@@ -337,8 +337,8 @@ sequenceDiagram
 | Destino fuera del Perú | — | "La cobertura está limitada al Perú." |
 | Días fuera de rango | — | "La duración debe ser entre 2 y 5 días." |
 | Rate limit alcanzado | 429 | "Alcanzaste el límite de hoy. Vuelve mañana." |
-| Fallo de Gemini | 503 | "No se pudo generar. Intenta de nuevo." |
-| JSON de Gemini inválido | 422 | "Respuesta inesperada. Intenta de nuevo." |
+| Fallo de la IA | 503 | "No se pudo generar. Intenta de nuevo." |
+| JSON de la IA inválido | 422 | "Respuesta inesperada. Intenta de nuevo." |
 | Token expirado o manipulado | 403 | "Sesión de generación inválida. Genera de nuevo." |
 | Costo > presupuesto | — | Banner ámbar con diferencia en S/ |
 | Error de transacción RPC | 500 | "No se pudo guardar. El itinerario sigue visible." |
@@ -348,7 +348,7 @@ sequenceDiagram
 
 ---
 
-## 9. Esquema JSON de respuesta de Gemini
+## 9. Esquema JSON de respuesta de la IA
 
 ```json
 {
@@ -407,7 +407,7 @@ sequenceDiagram
 | HU-01 | Login válido → dashboard | Credenciales inválidas → error sin revelar cuál falló | Sin sesión → redirige a login |
 | HU-02 | Registro exitoso → confirmación | Email duplicado → respuesta neutra | Contraseña débil → mensaje de política |
 | HU-03 | Formulario completo → genera | Campo vacío → bloquea con mensaje | Destino fuera del Perú → bloqueado |
-| HU-04 | JSON válido → itinerario visible | Gemini falla → formulario conservado | 5 intentos agotados → 429 |
+| HU-04 | JSON válido → itinerario visible | La IA falla → formulario conservado | 5 intentos agotados → 429 |
 | HU-04 concurrencia | 2 solicitudes con 3 intentos usados → ambas pasan | — | Advisory lock serializa correctamente |
 | HU-05 | Costo < presupuesto → sin advertencia | Costo > presupuesto → banner ámbar | Costo no estimado no suma al total |
 | HU-06 | Guardar → confirmación → en Mis viajes | Error DB → itinerario visible | viaje_id ajeno → RLS devuelve vacío |
@@ -421,7 +421,7 @@ sequenceDiagram
 flowchart LR
     H1["🖼 Hito 1\nFrontend Mock\nHTML + Tailwind + JS\n5 vistas + paleta\nEstados UI sin backend"]
     H2["🗄 Hito 2\nPersistencia\nSupabase Auth\n4 tablas + RLS\nFunción RPC"]
-    H3["🤖 Hito 3\nIA Integrada\n2 Edge Functions\nGemini + rate limit\nJSON validado"]
+    H3["🤖 Hito 3\nIA Integrada\n2 Edge Functions\nClaude/Gemini + rate limit\nJSON validado"]
     H4["🚀 Hito 4\nPublicación\nGitHub + hosting\nURL pública\nDemo Day"]
 
     H1 --> H2 --> H3 --> H4
@@ -435,12 +435,12 @@ Ver `roadmap.md` para estado actualizado de cada hito.
 
 | Riesgo | Prob. | Impacto | Mitigación |
 |---|---|---|---|
-| Gemini devuelve JSON malformado | Alta | Alto | Validación estricta en Edge Function |
+| La IA devuelve JSON malformado | Alta | Alto | Validación estricta en Edge Function |
 | Exposición de API Keys | Baja | Crítico | Solo en secretos Supabase; `.gitignore` revisado |
 | Acceso cruzado entre usuarios | Baja | Alto | RLS + RPC SECURITY DEFINER con auth.uid() |
 | Solicitudes concurrentes | Media | Medio | Advisory lock por user_id |
 | Registros parciales en DB | Baja | Alto | Transacción única en RPC; ROLLBACK automático |
-| Costos inesperados de Gemini | Media | Medio | Rate limit 5/usuario/día |
+| Costos inesperados de la IA | Media | Medio | Rate limit 5/usuario/día |
 | Scope creep | Media | Medio | CLAUDE.md como árbitro de alcance |
 
 ---

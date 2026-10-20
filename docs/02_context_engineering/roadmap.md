@@ -122,7 +122,7 @@ Login real → dashboard → guardar viaje → cerrar sesión → volver → con
 **Plan detallado:** `docs/05_integracion_ia/plan_hito_03.md`
 
 ### Decisiones (aprobadas)
-- [x] **P1 / D-B:** principal `gemini-3.1-flash-lite` + respaldo automático `gemini-3.8-flash` (decisión del responsable, por la saturación del nivel gratuito). Timeout de 60 s por modelo
+- [x] **P1 / D-B:** principal Claude `claude-opus-5-5`; respaldo automático Gemini `gemini-3.1-flash-lite` → `gemini-3.8-flash` (cambio aprobado el 20 Oct 2026 por la saturación del nivel gratuito de Gemini; ver Hito 4). Timeout de 60 s por modelo
 - [x] **P2 / D-C:** API Key solo en Supabase Secrets; rotación periódica y ante exposición
 - [x] **D-A:** guardar enviando solo el token; el servidor recupera el itinerario original (sin Edge Function `guardar-itinerario`)
 - [x] **D-D:** límite de 5 por día calendario `America/Lima` · **D-E:** error + reintento, sin fallback simulado · **D-F:** despliegue con Supabase CLI
@@ -134,8 +134,8 @@ Login real → dashboard → guardar viaje → cerrar sesión → volver → con
 
 ### Tareas
 - [x] Migración `supabase/migrations/002_generacion_ia.sql` (ejecutada): esquema `private`, `iniciar_generacion`, `completar_generacion`, `guardar_itinerario_completo(p_token)`; firma antigua eliminada
-- [x] Secret `GEMINI_API_KEY` (+ `GEMINI_MODEL_RESPALDO`)
-- [x] Edge Function `generar-itinerario` (JWT, verificación del modelo, cupo atómico, Gemini con esquema JSON, validación, token)
+- [x] Secrets `ANTHROPIC_API_KEY` + `ANTHROPIC_MODEL` (principal) y `GEMINI_API_KEY` (+ `GEMINI_MODEL_RESPALDO`) de respaldo
+- [x] Edge Function `generar-itinerario` (JWT, verificación del modelo, cupo atómico, Claude con esquema JSON y Gemini de respaldo, validación, token)
 - [x] `itinerary_schema.json` y `system_prompt_itinerario.md` en `docs/05_integracion_ia/`
 - [x] Frontend: `viaje.js` llama a `generar-itinerario`; `itinerario.js` guarda con el token; generador simulado eliminado
 - [x] Advertencia si el costo estimado supera el presupuesto (calculada en el servidor)
@@ -200,7 +200,7 @@ MVP accesible en URL pública. Flujo completo y aislamiento de datos verificados
 | D3 | Auth | Supabase Auth — obligatoria |
 | D4 | Moneda | PEN — sin transporte al destino |
 | D5 | Backend | Supabase Edge Functions |
-| D6 | IA | Gemini Flash (configurable por env) |
+| D6 | IA | Claude (principal) + Gemini (respaldo), configurables por env |
 | D7 | Rate limit | 5 solicitudes/usuario/día |
 | D8 | Paleta | Azul profundo · Turquesa · Blanco |
 | D9 | Persistencia | RPC PostgreSQL — transacción atómica |

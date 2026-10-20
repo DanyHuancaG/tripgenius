@@ -45,7 +45,7 @@ GitHub (repositorio público DanyHuancaG/tripgenius)
                                        https://danyhuancag.github.io/tripgenius/
                                               │  (HTML + JS estáticos)
                                               ▼
-                                  Supabase (sin cambios: Auth, BD, Edge Function, Gemini)
+                                  Supabase (sin cambios: Auth, BD, Edge Function; IA: Claude + Gemini de respaldo)
 ```
 
 El frontend es estático. Supabase y la Edge Function no se mueven: solo se autoriza la nueva URL.
@@ -72,7 +72,7 @@ El frontend es estático. Supabase y la Edge Function no se mueven: solo se auto
 | 6 | Añadir `https://danyhuancag.github.io` a `ALLOWED_ORIGINS` y volver a desplegar la función | Agente |
 | 7 | En Supabase → URL Configuration: **Site URL** = URL de Pages y añadir `https://danyhuancag.github.io/tripgenius/**` en **Redirect URLs** (se mantiene la de Live Server) | **Responsable** (panel) |
 | 8 | Pruebas en la URL pública (sección 6) | Agente |
-| 9 | Actualizar el roadmap y este plan; preparar una guía breve para el Demo Day (cómo crear cuentas de prueba, qué mostrar si Gemini se satura) | Agente |
+| 9 | Actualizar el roadmap y este plan; preparar una guía breve para el Demo Day (cómo crear cuentas de prueba, qué mostrar si la IA falla) | Agente |
 
 ## 5. Seguridad antes de publicar
 
@@ -84,7 +84,7 @@ El frontend es estático. Supabase y la Edge Function no se mueven: solo se auto
   - la URL de Supabase;
   - la **publishable key**, porque los datos están protegidos por RLS y permisos (probado en los Hitos 2 y 3).
 - **Qué nunca va al repositorio:**
-  - la API Key de Gemini, que vive solo en Supabase Secrets;
+  - las API Keys de Anthropic y Gemini, que viven solo en Supabase Secrets;
   - la `service_role` o secret key;
   - la contraseña de la base de datos;
   - el token del CLI, que está en el llavero de Windows.
