@@ -463,6 +463,7 @@ Ver `roadmap.md` para estado actualizado de cada hito.
 > **Hito 1:** ✅ Completado — detalle en `docs/03_frontend/plan_hito1.md`
 > **Hito 2:** ✅ Completado — detalle, aprobación y desviaciones respecto a este plan en `docs/04_backend_supabase/plan_hito2.md`
 > **Hito 3:** ✅ Completado — detalle, decisiones y pruebas en `docs/05_integracion_ia/plan_hito_03.md`
+> **Hito 4:** ✅ Completado — publicado en https://danyhuancag.github.io/tripgenius/ (`docs/06_despliegue/plan_hito_04.md`)
 >
 > Este documento es el plan base v3. Las desviaciones aprobadas en cada hito (p. ej. `search_path = ''`,
 > eliminación de `viajes_insert_own`, costo total recalculado en servidor) se registran en el plan de

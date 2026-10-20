@@ -63,5 +63,5 @@ No afirmar que algo está probado sin ejecutar la prueba correspondiente. En cas
 - Hito 1 — Frontend Mock: ✅ completado (`docs/03_frontend/plan_hito1.md`).
 - Hito 2 — Supabase (Auth, tablas, RLS, RPC): ✅ completado (`docs/04_backend_supabase/plan_hito2.md`).
 - Hito 3 — IA integrada (Edge Function, token de un solo uso, límite de 5 al día): ✅ completado (`docs/05_integracion_ia/plan_hito_03.md`). Desde el Hito 4, Claude es el proveedor principal y Gemini el de respaldo.
-- Hito 4 — GitHub y publicación en GitHub Pages: en curso (`docs/06_despliegue/plan_hito_04.md`).
+- Hito 4 — GitHub y publicación en GitHub Pages: ✅ completado (`docs/06_despliegue/plan_hito_04.md`). App: https://danyhuancag.github.io/tripgenius/
 - Seguimiento general: `docs/02_context_engineering/roadmap.md`.

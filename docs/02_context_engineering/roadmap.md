@@ -13,7 +13,7 @@
 ✅ Hito 1 — Frontend Mock        COMPLETADO
 ✅ Hito 2 — Persistencia         COMPLETADO
 ✅ Hito 3 — IA Integrada         COMPLETADO
-🟡 Hito 4 — Publicación          EN CURSO
+✅ Hito 4 — Publicación          COMPLETADO
 ```
 
 ---
@@ -159,7 +159,8 @@ Flujo completo con IA real: login → configurar → generar → visualizar → 
 ---
 
 ## 🚀 Hito 4 — Publicación
-**Estado: 🟡 En curso — app publicada; faltan pruebas que dependen de Gemini y del correo de registro**
+**Estado: ✅ Completado — aprobado por el responsable (20 Oct 2026)**
+**App:** https://danyhuancag.github.io/tripgenius/ · **Código:** https://github.com/DanyHuancaG/tripgenius
 **Plan detallado:** `docs/06_despliegue/plan_hito_04.md`
 
 ### Decisiones
@@ -174,16 +175,16 @@ Flujo completo con IA real: login → configurar → generar → visualizar → 
 - [x] Subir a GitHub tras revisar que no haya secretos expuestos (escaneo del contenido preparado)
 - [x] Cambiar las contraseñas débiles de las cuentas de prueba (b, c y d)
 - [x] CORS con `https://danyhuancag.github.io`
-- [ ] Supabase Auth: Site URL y Redirect URLs públicas (responsable)
+- [x] Supabase Auth: Site URL y Redirect URLs públicas *(confirmado por el responsable)*
 - [x] Deploy y verificación de la URL pública (carga, rutas, solo `src/`)
 - [ ] Smoke test completo end-to-end:
   - [x] Sin sesión → login · credenciales incorrectas · login · seguridad por API (8/8)
   - [x] Generación real con Claude desde la Edge Function: Opus 30 s, Sonnet 16 s, Haiku 12 s (comparativa en el plan, sección 8.3)
-  - [ ] Flujo en el navegador desde la URL pública: generar → guardar → cerrar sesión → volver → consultar
-  - [ ] Registro + confirmación de correo (límite de correos de Supabase)
+  - [x] Flujo en el navegador desde la URL pública: generar → guardar → cerrar sesión → volver → consultar *(confirmado por el responsable)*
+  - [x] Registro + confirmación de correo *(confirmado por el responsable)*
   - [x] Un usuario no puede ver los datos de otro
 - [x] Viaje real guardado como respaldo para el Demo Day (Cusco, 3 días, Opus 5.5, cuenta `usuario.e`)
-- [ ] Cambiar la contraseña de `usuario.e` al terminar las pruebas
+- [x] Cambiar la contraseña de `usuario.e` al terminar las pruebas *(responsable)*
 
 ### Criterio de salida
 MVP accesible en URL pública. Flujo completo y aislamiento de datos verificados.
@@ -207,4 +208,4 @@ MVP accesible en URL pública. Flujo completo y aislamiento de datos verificados
 
 ---
 
-*Última actualización: 20 Oct 2026 — Hito 3 completado.*
+*Última actualización: 20 Oct 2026 — Hito 4 completado. MVP publicado.*

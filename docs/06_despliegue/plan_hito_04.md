@@ -1,6 +1,7 @@
 # Plan del Hito 4: GitHub y publicación
 
-> **Estado:** ✅ Aprobado con condiciones (20 Oct 2026). **Autorizado hasta ahora:** solo la revisión de seguridad y de rutas de publicación. No incluye crear el repositorio ni publicar.
+> **Estado:** ✅ Completado — cerrado por el responsable (20 Oct 2026).
+> **App:** https://danyhuancag.github.io/tripgenius/ · **Código:** https://github.com/DanyHuancaG/tripgenius
 
 ## Aprobación del responsable
 
@@ -214,6 +215,23 @@ Chrome automatizado contra `https://danyhuancag.github.io/tripgenius/`, con `usu
 **Viaje de respaldo para la demo (condición 9):** el itinerario de Opus 5.5 se guardó con su token en la cuenta `usuario.e` → **Cusco, 3 días, 19 actividades, S/ 868** (`viaje_id 7836a5c8-…`).
 
 **Modelo elegido por el responsable (20 Oct 2026):** `claude-opus-5-5`, por la calidad del itinerario (alojamiento y entradas incluidos) con un costo real de unos US$ 0,045 por itinerario. Configurado en el secret `ANTHROPIC_MODEL`; se cambia sin tocar código.
+
+## 8.4 Cierre del hito (20 Oct 2026)
+
+| Condición | Estado | Verificación |
+|---|---|---|
+| 1. Rutas bajo `/tripgenius/` | ✅ | Agente: revisión estática + simulación (11/12; solo falta `favicon.ico`, estético) + URL pública |
+| 2. Supabase Auth con URL pública | ✅ | Configurado y confirmado por el responsable |
+| 3. CORS con `https://danyhuancag.github.io` | ✅ | Agente: preflight aceptado; dominio parecido malicioso rechazado |
+| 4. Sin secretos ni datos personales | ✅ | Agente: escaneo antes de cada commit (incluida `sk-ant-…`); autor con el correo *noreply* |
+| 5. Contraseñas débiles cambiadas | ✅ | Agente: b, c y d verificadas (las antiguas se rechazan). `usuario.e`: confirmado por el responsable |
+| 6. Actions con permisos mínimos, solo `src/` | ✅ | Agente: `permissions: {}`, SHA fijados; 404 en `docs/`, `supabase/`, `CLAUDE.md` |
+| 7. RLS, token y límite intactos | ✅ | Agente: API 8/8 desde la URL pública; el límite cuenta los intentos fallidos |
+| 8. Flujo completo desde la URL pública | ✅ | Agente: carga, sesión, login, CORS, seguridad, generación real con Claude (Opus, Sonnet, Haiku) y guardado. **Responsable:** registro + confirmación de correo y flujo completo en el navegador |
+| 9. Demo con respaldo | ✅ | Viaje Cusco 3 días (Opus 5.5) guardado en `usuario.e` |
+| 10. Pruebas y evidencias registradas | ✅ | Secciones 7, 8.1, 8.2, 8.3 y este cierre |
+
+**Cambios de alcance aprobados durante el hito:** autocompletado y validación del destino (8.2) y Claude Opus 5.5 como proveedor principal (8.3).
 
 ## 9. Limitaciones conocidas al publicar
 
