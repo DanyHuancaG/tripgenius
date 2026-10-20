@@ -1,0 +1,159 @@
+# Plan del Hito 4: GitHub y publicación
+
+> **Estado:** ✅ Aprobado con condiciones (20 Oct 2026). **Autorizado hasta ahora:** solo la revisión de seguridad y de rutas de publicación. No incluye crear el repositorio ni publicar.
+
+## Aprobación del responsable
+
+Decisiones confirmadas:
+- Hosting: GitHub Pages.
+- Repositorio `DanyHuancaG/tripgenius`, público.
+- GitHub Actions publicando exclusivamente `src/`.
+- Incluir código y documentación tras revisar que no contengan información privada.
+- Mantener temporalmente el origen local en CORS.
+
+Condiciones obligatorias:
+
+> 1. Revisar todas las rutas absolutas y relativas para que funcionen correctamente bajo `/tripgenius/`, incluyendo navegación, recursos estáticos, autenticación y consulta de itinerarios.
+> 2. Configurar Supabase Auth con la Site URL pública y las Redirect URLs correspondientes. Mantener las URLs locales de desarrollo autorizadas.
+> 3. Configurar CORS utilizando el origen `https://danyhuancag.github.io`, sin la ruta `/tripgenius/`.
+> 4. Revisar los archivos actuales y el historial de Git, si existe, para detectar secretos, credenciales, datos personales o evidencias sensibles. No publicar hasta completar la revisión.
+> 5. Cambiar o desactivar las contraseñas débiles de las cuentas de prueba antes de hacer pública la aplicación.
+> 6. Configurar GitHub Actions con permisos mínimos y publicar únicamente la carpeta `src/`.
+> 7. Mantener intactas las políticas RLS, la validación del token de generación y el límite de cinco generaciones diarias.
+> 8. Verificar el flujo completo desde la URL pública, incluyendo registro, confirmación de correo, login, generación con Gemini, guardado, cierre de sesión, recuperación de datos y aislamiento entre usuarios.
+> 9. Preparar una demostración con una cuenta de prueba válida y un itinerario real previamente guardado por si se alcanza el límite de Gemini.
+> 10. Registrar las pruebas y evidencias del despliegue.
+
+**Orden autorizado:** primero la revisión de seguridad y de rutas; mostrar los resultados; no desplegar públicamente sin una nueva aprobación. Sin funcionalidades nuevas.
+> **Plan base:** `docs/02_context_engineering/plan_arquitectura.md` · **Seguimiento:** `docs/02_context_engineering/roadmap.md`
+
+---
+
+## 1. Objetivo
+
+Versionar el proyecto en GitHub y publicar la app en una **URL pública** (GitHub Pages), para que cualquier persona con una cuenta la use desde cualquier lugar, sin depender del PC del responsable.
+
+**Criterio de salida (roadmap):** MVP accesible en una URL pública, con el flujo completo y el aislamiento de datos entre usuarios verificados.
+
+## 2. Arquitectura de publicación
+
+```
+GitHub (repositorio público DanyHuancaG/tripgenius)
+  ├── código: src/, supabase/, docs/
+  └── GitHub Actions ──publica src/──► GitHub Pages
+                                       https://danyhuancag.github.io/tripgenius/
+                                              │  (HTML + JS estáticos)
+                                              ▼
+                                  Supabase (sin cambios: Auth, BD, Edge Function, Gemini)
+```
+
+El frontend es estático. Supabase y la Edge Function no se mueven: solo se autoriza la nueva URL.
+
+## 3. Decisiones que debe tomar el responsable
+
+| # | Decisión | Opciones | Recomendación |
+|---|---|---|---|
+| **P3** | Hosting | GitHub Pages · Vercel · Netlify | **GitHub Pages** (elegido por el responsable) |
+| **H4-A** | Nombre y visibilidad del repositorio | `tripgenius`, público o privado | **`tripgenius`, público**: Pages gratuito lo exige en cuentas Free. No hay secretos en el código (sección 5) |
+| **H4-B** | Cómo publicar la carpeta `src/` | **A:** GitHub Actions publica `src/` tal cual · **B:** mover la app a la raíz o a `/docs` | **A:** no cambia la estructura aprobada. Pages solo sirve la raíz o `/docs`, y `/docs` ya está ocupado por la documentación |
+| **H4-C** | Qué se sube | Todo menos lo ignorado · solo `src/` | **Todo** (`src/`, `supabase/`, `docs/`, `CLAUDE.md`, `README.md`), para que el docente revise el código y la documentación. Se excluye `supabase/.temp/` (ya está en `.gitignore`) |
+| **H4-D** | Origen de la red local (`http://<IP de la red local>:5500`) en CORS | Mantener · quitar | **Mantener** mientras se pruebe en local; quitarlo después del Demo Day |
+
+## 4. Actividades
+
+| # | Actividad | Quién |
+|---|---|---|
+| 1 | Inicializar Git, revisar `git status` y el contenido exacto que se va a subir | Agente |
+| 2 | **Escaneo de secretos** antes del primer commit (ver sección 5). Si aparece algo, se detiene todo | Agente |
+| 3 | Actualizar `src/README.md` (todavía describe el "mock") y el `README.md` raíz con el link público y cómo usar la app | Agente |
+| 4 | Crear `.github/workflows/pages.yml`: publica `src/` con las acciones oficiales de Pages, en versiones fijas | Agente |
+| 5 | Primer commit y creación del repositorio público con `gh repo create`. Activar Pages con el origen "GitHub Actions" | Agente (con el `gh` ya autenticado) |
+| 6 | Añadir `https://danyhuancag.github.io` a `ALLOWED_ORIGINS` y volver a desplegar la función | Agente |
+| 7 | En Supabase → URL Configuration: **Site URL** = URL de Pages y añadir `https://danyhuancag.github.io/tripgenius/**` en **Redirect URLs** (se mantiene la de Live Server) | **Responsable** (panel) |
+| 8 | Pruebas en la URL pública (sección 6) | Agente |
+| 9 | Actualizar el roadmap y este plan; preparar una guía breve para el Demo Day (cómo crear cuentas de prueba, qué mostrar si Gemini se satura) | Agente |
+
+## 5. Seguridad antes de publicar
+
+- **Escaneo de secretos** sobre todo lo que se subiría:
+  - patrones de claves de Google (`AIza…`, `AQ.…`);
+  - `sb_secret_`, `service_role` con JWT y `GEMINI_API_KEY=`;
+  - archivos `.env`.
+- **Qué es público y está permitido:**
+  - la URL de Supabase;
+  - la **publishable key**, porque los datos están protegidos por RLS y permisos (probado en los Hitos 2 y 3).
+- **Qué nunca va al repositorio:**
+  - la API Key de Gemini, que vive solo en Supabase Secrets;
+  - la `service_role` o secret key;
+  - la contraseña de la base de datos;
+  - el token del CLI, que está en el llavero de Windows.
+- **Scripts de prueba con contraseñas de los usuarios de prueba:** están fuera del proyecto (carpeta temporal) y **no se suben**.
+- **Recomendación:** después de publicar, cambiar las contraseñas de los usuarios de prueba (`usuario.b`, `.c`, `.d`), porque se compartieron en el chat y algunas son débiles.
+
+## 6. Pruebas planificadas
+
+**Nominales (URL pública)**
+- La página carga por HTTPS, sin errores de JavaScript ni rutas rotas (`js/…`).
+- Login → crear viaje → generar con IA → guardar → Mis viajes → cerrar sesión → volver → detalle.
+
+**De error**
+- Páginas privadas sin sesión → login.
+- Credenciales incorrectas → mensaje neutro.
+
+**De seguridad**
+- CORS: la URL de Pages se acepta y un origen ajeno se rechaza.
+- B no ve los viajes de A, ni en la lista ni por URL.
+- El repositorio publicado no contiene secretos (escaneo del contenido ya subido).
+
+**Regresión:** las suites de API de los Hitos 2 y 3 (RLS, `generaciones_log` protegido, token 403/409).
+
+**Limitación de las pruebas:** cada generación consume cupo de un usuario (5 por día). Se usará una cuenta con cupo disponible.
+
+## 7. Resultados de la revisión previa (20 Oct 2026)
+
+### 7.1 Seguridad (condición 4)
+
+| Revisión | Resultado |
+|---|---|
+| Historial de Git | No existe (el proyecto aún no es un repositorio): no hay secretos en commits anteriores |
+| Archivos a publicar | 37. Se excluye `supabase/.temp/` (ref del proyecto e ID de organización), ya ignorado en `.gitignore` |
+| Claves de Google (`AIza…`, `AQ.…`) | ✅ Ninguna |
+| `sb_secret_`, `service_role`, JWT | ✅ Ninguno (solo aparece el texto de este plan que describe qué buscar) |
+| Asignaciones `API_KEY=`, `PASSWORD=`, `TOKEN=` | ✅ Ninguna |
+| Contraseñas de prueba | ⚠ Una contraseña de prueba aparecía en este plan → **eliminada** (además, ya fue cambiada) |
+| Correos personales | ✅ Ninguno (solo el placeholder `tucorreo@ejemplo.com`) |
+| Clave pública | `sb_publishable_…` en `src/js/supabase-client.js`: permitida por diseño |
+| IP de la red local | ⚠ Aparecía en 2 documentos. Es una dirección de red local, no accesible desde internet; bajo riesgo. **Decisión del responsable:** reemplazada por "IP de la red local". Sigue configurada en el secret `ALLOWED_ORIGINS` de Supabase, que no está en el repositorio |
+
+### 7.2 Rutas bajo `/tripgenius/` (condición 1)
+
+Revisión estática:
+- Sin rutas absolutas `/…` en HTML ni en JS. Toda la navegación es relativa (`dashboard.html`, `itinerario.html?id=…`, `js/…`).
+- Los recursos externos usan URLs completas (CDN, Supabase).
+- Las 11 referencias locales existen con las mismas mayúsculas y minúsculas (Pages distingue entre ellas).
+
+Prueba dinámica, simulando Pages (`src/` servido en `http://127.0.0.1:5597/tripgenius/`, Chrome): **11/12**
+- ✅ `/tripgenius/` carga el login, sin necesidad de escribir `index.html`.
+- ✅ Sin sesión, las páginas privadas redirigen a `/tripgenius/index.html`.
+- ✅ `emailRedirectTo` = `…/tripgenius/index.html`, cubierto por la Redirect URL `…/tripgenius/**`.
+- ✅ Login → dashboard → detalle de un viaje guardado desde Supabase → crear viaje → cerrar sesión, todo dentro de `/tripgenius/`.
+- ✅ Sin errores de JavaScript.
+- ⚠ Única petición fuera de la ruta: `/favicon.ico`, que el navegador pide automáticamente. Es solo estético (la pestaña sin icono) y no afecta al funcionamiento.
+- No se probó la generación con IA en esta simulación: CORS solo acepta los orígenes configurados. Se probará en la URL pública (condición 8).
+
+### 7.3 Pendientes antes de publicar
+
+| # | Pendiente | Quién |
+|---|---|---|
+| 1 | Cambiar o desactivar las contraseñas de `usuario.b`, `usuario.c` y `usuario.d` (condición 5) | ✅ Hecho por el responsable (20 Oct 2026). Verificado: las contraseñas antiguas de b, c y d se rechazan (`invalid_credentials`). Las nuevas no se compartieron. `usuario.a` también se actualizó, según el responsable |
+| 2 | Actualizar `src/README.md` (dice "Frontend Mock") y la sección "Estado actual" de `CLAUDE.md` (dice "Aplicación aún no implementada"), que se publicarán | ✅ Actualizados (autorizado por el responsable) |
+| 3 | Decidir si se mantiene la IP privada en la documentación | ✅ Reemplazada por "IP de la red local" |
+
+## 8. Limitaciones conocidas al publicar
+
+| Limitación | Efecto | Mitigación |
+|---|---|---|
+| Correo integrado de Supabase (unos 2 por hora) | Pocos usuarios pueden registrarse solos al día | Crear cuentas desde el panel con *Auto Confirm User*, o SMTP propio (fuera del alcance) |
+| Gemini en nivel gratuito | Saturación ocasional (503) | Modelo de respaldo + error controlado. Tener un viaje guardado para la demo |
+| Tailwind por CDN | Aviso en consola "should not be used in production" | Aceptable para un MVP académico; no afecta al funcionamiento |
+| Repositorio público | El código es visible | Sin secretos; la seguridad depende de Auth y RLS, no de ocultar el código |

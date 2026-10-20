@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripGenius — Tu itinerario</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   '#1E3A5F',
+            turquoise: '#2EC4B6',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .activity-card { border-left: 4px solid #2EC4B6; }
+  </style>
+</head>
+<!-- Oculto hasta confirmar la sesión (Sesion.requerir) -->
+<body class="min-h-screen bg-gray-50 flex flex-col" style="visibility: hidden">
+
+  <!-- Header -->
+  <header class="bg-primary py-4 px-6 shadow flex items-center justify-between">
+    <a href="dashboard.html" class="text-white text-2xl font-bold tracking-tight">✈ TripGenius</a>
+    <button onclick="Auth.cerrarSesion()"
+      class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">
+      Cerrar sesión
+    </button>
+  </header>
+
+  <!-- Toast de éxito (oculto por defecto) -->
+  <div id="toast-exito"
+    class="hidden fixed top-5 right-5 z-50 flex items-center gap-2 bg-green-600 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg transition-all">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+    </svg>
+    ¡Itinerario guardado con éxito!
+  </div>
+
+  <!-- Main -->
+  <main class="flex-1 px-4 py-10 max-w-3xl mx-auto w-full">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+      <a href="dashboard.html" class="hover:text-turquoise transition">Mis viajes</a>
+      <span>›</span>
+      <span class="text-primary font-semibold">Itinerario</span>
+    </div>
+
+    <!-- Estado: Cargando -->
+    <div id="itin-cargando" class="flex flex-col items-center justify-center py-24 gap-4">
+      <svg class="animate-spin w-10 h-10 text-turquoise" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+      <p class="text-gray-500 text-sm">Cargando itinerario…</p>
+    </div>
+
+    <!-- Estado: No encontrado (no existe o pertenece a otro usuario) -->
+    <div id="itin-no-encontrado" class="hidden flex flex-col items-center justify-center py-24 gap-4 text-center">
+      <div class="text-5xl">🔍</div>
+      <h2 class="text-xl font-semibold text-primary">No encontramos este viaje</h2>
+      <p class="text-gray-500 text-sm">No existe o no tienes acceso a él.</p>
+      <a href="dashboard.html"
+        class="mt-2 border-2 border-turquoise text-turquoise font-semibold px-6 py-2.5 rounded-lg hover:bg-turquoise hover:text-white transition text-sm">
+        Volver a Mis viajes
+      </a>
+    </div>
+
+    <!-- Estado: Contenido -->
+    <div id="itin-contenido" class="hidden">
+
+    <!-- Advertencia de presupuesto (oculta por defecto) -->
+    <div id="budget-warning" class="hidden mb-6 flex items-start gap-3 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-5 py-4 text-sm">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <div>
+        <strong>El costo estimado supera tu presupuesto.</strong>
+        <p id="budget-diff" class="mt-0.5">El itinerario excede tu presupuesto en S/ 0.00. Los costos son referenciales.</p>
+      </div>
+    </div>
+
+    <!-- Error de guardado -->
+    <div id="save-error" class="hidden mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+      <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <span id="save-error-msg">No se pudo guardar el itinerario. Intenta de nuevo.</span>
+      <button onclick="Itinerario.guardar()" class="ml-auto text-red-700 font-semibold underline hover:no-underline">Reintentar</button>
+    </div>
+
+    <!-- Encabezado del itinerario -->
+    <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 id="itin-titulo" class="text-2xl font-bold text-primary">Cusco · 3 días</h1>
+          <p id="itin-intereses" class="text-gray-500 text-sm mt-1">Intereses: Cultura · Gastronomía</p>
+        </div>
+        <!-- Resumen de presupuesto -->
+        <div class="bg-gray-50 rounded-xl px-5 py-3 text-right min-w-[180px]">
+          <p class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Presupuesto</p>
+          <p id="itin-presupuesto" class="text-lg font-bold text-primary">S/ 800.00</p>
+          <p class="text-xs text-gray-400 mt-0.5">Costo est.</p>
+          <p id="itin-costo" class="text-base font-semibold text-gray-700">S/ 720.00</p>
+        </div>
+      </div>
+
+      <!-- Descargo de responsabilidad -->
+      <p class="text-xs text-gray-400 italic mt-4 border-t pt-3">
+        ⚠ Horarios, tarifas y disponibilidad son estimaciones referenciales, no verificadas en tiempo real.
+      </p>
+    </div>
+
+    <!-- Días del itinerario (inyectados por itinerario.js) -->
+    <div id="dias-container" class="space-y-6 mb-8">
+      <!-- Tarjetas de días generadas por JS -->
+    </div>
+
+    <!-- Acciones -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button id="guardar-btn" onclick="Itinerario.guardar()"
+        class="flex-1 bg-primary text-white font-semibold py-3 rounded-lg hover:bg-opacity-90 transition flex items-center justify-center gap-2 text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+        </svg>
+        <span id="guardar-btn-text">Guardar itinerario</span>
+        <svg id="guardar-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+      </button>
+
+      <a href="dashboard.html"
+        class="flex-1 border-2 border-turquoise text-turquoise font-semibold py-3 rounded-lg hover:bg-turquoise hover:text-white transition text-sm text-center">
+        Descartar y volver
+      </a>
+    </div>
+
+    </div><!-- /itin-contenido -->
+
+    <!-- Demo helpers -->
+    <div class="mt-8 text-center space-x-3">
+      <button onclick="Itinerario.mostrarAdvertencia()"  class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Presupuesto excedido</button>
+      <button onclick="Itinerario.simularGuardando()"    class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Guardando…</button>
+      <button onclick="Itinerario.simularErrorGuardado()" class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Error al guardar</button>
+      <button onclick="Itinerario.simularExitoGuardado()" class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Guardado exitoso</button>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-4">
+    TripGenius — Especialización Vibe Coding · DMC Institute
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/mock-store.js"></script>
+  <script src="js/itinerario.js"></script>
+</body>
+</html>

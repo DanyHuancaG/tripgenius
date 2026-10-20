@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripGenius — Crear viaje</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   '#1E3A5F',
+            turquoise: '#2EC4B6',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .chip input:checked + label {
+      background-color: #1E3A5F;
+      color: white;
+      border-color: #1E3A5F;
+    }
+  </style>
+</head>
+<!-- Oculto hasta confirmar la sesión (Sesion.requerir) -->
+<body class="min-h-screen bg-gray-50 flex flex-col" style="visibility: hidden">
+
+  <!-- Header -->
+  <header class="bg-primary py-4 px-6 shadow flex items-center justify-between">
+    <a href="dashboard.html" class="text-white text-2xl font-bold tracking-tight">✈ TripGenius</a>
+    <button onclick="Auth.cerrarSesion()"
+      class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">
+      Cerrar sesión
+    </button>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-start justify-center px-4 py-10">
+    <div class="w-full max-w-xl">
+
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+        <a href="dashboard.html" class="hover:text-turquoise transition">Mis viajes</a>
+        <span>›</span>
+        <span class="text-primary font-semibold">Nuevo viaje</span>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-md p-8">
+        <h1 class="text-2xl font-bold text-primary mb-1">Configura tu viaje</h1>
+        <p class="text-gray-500 text-sm mb-6">Cuéntanos tus preferencias y la IA armará tu itinerario</p>
+
+        <!-- Error banner global -->
+        <div id="error-banner" class="hidden mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span id="error-msg">No se pudo generar el itinerario. Intenta de nuevo.</span>
+        </div>
+
+        <!-- Rate limit banner -->
+        <div id="ratelimit-banner" class="hidden mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-3 text-sm">
+          <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span>Alcanzaste el límite de 5 generaciones por hoy. Vuelve mañana.</span>
+        </div>
+
+        <form id="viaje-form" novalidate>
+
+          <!-- Destino -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="destino">
+              Destino <span class="text-gray-400 font-normal">(dentro del Perú)</span>
+            </label>
+            <input id="destino" type="text" placeholder="Ej: Cusco, Arequipa, Iquitos…"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            <p id="destino-error" class="hidden text-red-500 text-xs mt-1">Ingresa un destino dentro del Perú.</p>
+          </div>
+
+          <!-- Días -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="dias">
+              Duración <span class="text-gray-400 font-normal">(2 a 5 días)</span>
+            </label>
+            <select id="dias"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition bg-white">
+              <option value="">Selecciona la duración</option>
+              <option value="2">2 días</option>
+              <option value="3">3 días</option>
+              <option value="4">4 días</option>
+              <option value="5">5 días</option>
+            </select>
+            <p id="dias-error" class="hidden text-red-500 text-xs mt-1">Selecciona la duración del viaje.</p>
+          </div>
+
+          <!-- Presupuesto -->
+          <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="presupuesto">
+              Presupuesto total <span class="text-gray-400 font-normal">(en S/ — no incluye transporte hasta el destino)</span>
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold">S/</span>
+              <input id="presupuesto" type="number" min="1" placeholder="0.00"
+                class="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            </div>
+            <p id="presupuesto-error" class="hidden text-red-500 text-xs mt-1">Ingresa un presupuesto mayor a S/ 0.</p>
+          </div>
+
+          <!-- Intereses (chips) -->
+          <div class="mb-7">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Intereses <span class="text-gray-400 font-normal">(elige uno o más)</span></label>
+            <div class="flex flex-wrap gap-2">
+              <!-- Chip: Cultura -->
+              <div class="chip">
+                <input type="checkbox" id="cultura" value="cultura" class="hidden" />
+                <label for="cultura" class="cursor-pointer border-2 border-gray-300 text-gray-600 text-sm font-semibold px-4 py-1.5 rounded-full transition hover:border-primary hover:text-primary">
+                  🏛 Cultura
+                </label>
+              </div>
+              <!-- Chip: Aventura -->
+              <div class="chip">
+                <input type="checkbox" id="aventura" value="aventura" class="hidden" />
+                <label for="aventura" class="cursor-pointer border-2 border-gray-300 text-gray-600 text-sm font-semibold px-4 py-1.5 rounded-full transition hover:border-primary hover:text-primary">
+                  🧗 Aventura
+                </label>
+              </div>
+              <!-- Chip: Gastronomía -->
+              <div class="chip">
+                <input type="checkbox" id="gastronomia" value="gastronomia" class="hidden" />
+                <label for="gastronomia" class="cursor-pointer border-2 border-gray-300 text-gray-600 text-sm font-semibold px-4 py-1.5 rounded-full transition hover:border-primary hover:text-primary">
+                  🍽 Gastronomía
+                </label>
+              </div>
+              <!-- Chip: Naturaleza -->
+              <div class="chip">
+                <input type="checkbox" id="naturaleza" value="naturaleza" class="hidden" />
+                <label for="naturaleza" class="cursor-pointer border-2 border-gray-300 text-gray-600 text-sm font-semibold px-4 py-1.5 rounded-full transition hover:border-primary hover:text-primary">
+                  🌿 Naturaleza
+                </label>
+              </div>
+              <!-- Chip: Familiar -->
+              <div class="chip">
+                <input type="checkbox" id="familiar" value="familiar" class="hidden" />
+                <label for="familiar" class="cursor-pointer border-2 border-gray-300 text-gray-600 text-sm font-semibold px-4 py-1.5 rounded-full transition hover:border-primary hover:text-primary">
+                  👨‍👩‍👧 Familiar
+                </label>
+              </div>
+            </div>
+            <p id="intereses-error" class="hidden text-red-500 text-xs mt-2">Selecciona al menos un interés.</p>
+          </div>
+
+          <!-- Botón generar -->
+          <button id="generar-btn" type="submit"
+            class="w-full bg-primary text-white font-semibold py-3 rounded-lg hover:bg-opacity-90 transition flex items-center justify-center gap-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span id="btn-text">Generar itinerario con IA</span>
+            <svg id="btn-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- Demo helpers -->
+      <div class="mt-4 text-center space-x-3">
+        <button onclick="Viaje.simularGenerando()" class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Generando…</button>
+        <button onclick="Viaje.simularError()"     class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Error IA</button>
+        <button onclick="Viaje.simularRateLimit()" class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Límite diario</button>      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-4">
+    TripGenius — Especialización Vibe Coding · DMC Institute
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/mock-store.js"></script>
+  <script src="js/viaje.js"></script>
+</body>
+</html>

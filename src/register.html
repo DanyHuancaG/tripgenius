@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripGenius — Crear cuenta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   '#1E3A5F',
+            turquoise: '#2EC4B6',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="min-h-screen bg-gray-50 flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-primary py-4 px-6 shadow">
+    <a href="index.html" class="text-white text-2xl font-bold tracking-tight">✈ TripGenius</a>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+
+      <div class="bg-white rounded-2xl shadow-md p-8">
+        <h1 class="text-2xl font-bold text-primary mb-1">Crea tu cuenta</h1>
+        <p class="text-gray-500 text-sm mb-6">Regístrate y empieza a planificar viajes inteligentes</p>
+
+        <!-- Error banner -->
+        <div id="error-banner" class="hidden mb-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span id="error-msg">No se pudo crear la cuenta. Intenta de nuevo.</span>
+        </div>
+
+        <!-- Success banner -->
+        <div id="success-banner" class="hidden mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
+          <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          <span>Cuenta creada. Revisa tu correo para confirmar tu dirección.</span>
+        </div>
+
+        <form id="register-form" novalidate>
+          <!-- Email -->
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="email">Correo electrónico</label>
+            <input id="email" type="email" placeholder="tucorreo@ejemplo.com"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            <p id="email-error" class="hidden text-red-500 text-xs mt-1">Ingresa un correo válido.</p>
+          </div>
+
+          <!-- Contraseña -->
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="password">Contraseña</label>
+            <input id="password" type="password" placeholder="Mínimo 8 caracteres"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            <p id="password-error" class="hidden text-red-500 text-xs mt-1">La contraseña debe tener al menos 8 caracteres.</p>
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-1" for="confirm-password">Confirmar contraseña</label>
+            <input id="confirm-password" type="password" placeholder="Repite tu contraseña"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise focus:border-transparent transition" />
+            <p id="confirm-error" class="hidden text-red-500 text-xs mt-1">Las contraseñas no coinciden.</p>
+          </div>
+
+          <button id="register-btn" type="submit"
+            class="w-full bg-primary text-white font-semibold py-2.5 rounded-lg hover:bg-opacity-90 transition flex items-center justify-center gap-2">
+            <span id="btn-text">Crear cuenta</span>
+            <svg id="btn-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+          </button>
+        </form>
+
+        <p class="text-center text-sm text-gray-500 mt-5">
+          ¿Ya tienes cuenta?
+          <a href="index.html" class="text-turquoise font-semibold hover:underline">Inicia sesión</a>
+        </p>
+      </div>
+
+      <!-- Demo helpers -->
+      <div class="mt-4 text-center space-x-3">
+        <button onclick="Register.simularError()" class="text-xs text-gray-400 hover:text-gray-600 underline">
+          [Mock] Mostrar error
+        </button>
+        <button onclick="Register.simularExito()" class="text-xs text-gray-400 hover:text-gray-600 underline">
+          [Mock] Registro exitoso
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-4">
+    TripGenius — Especialización Vibe Coding · DMC Institute
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

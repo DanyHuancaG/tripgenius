@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripGenius — Mis viajes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary:   '#1E3A5F',
+            turquoise: '#2EC4B6',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<!-- Oculto hasta confirmar la sesión (Sesion.requerir) -->
+<body class="min-h-screen bg-gray-50 flex flex-col" style="visibility: hidden">
+
+  <!-- Header -->
+  <header class="bg-primary py-4 px-6 shadow flex items-center justify-between">
+    <span class="text-white text-2xl font-bold tracking-tight">✈ TripGenius</span>
+    <div class="flex items-center gap-4">
+      <span class="text-white text-sm opacity-80">Hola, <strong id="user-name">viajero</strong></span>
+      <button onclick="Auth.cerrarSesion()"
+        class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 px-4 py-10 max-w-5xl mx-auto w-full">
+
+    <!-- Título + CTA -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-primary">Mis viajes</h1>
+        <p class="text-gray-500 text-sm mt-1">Tus itinerarios guardados y listos para consultar</p>
+      </div>
+      <a href="crear-viaje.html"
+        class="bg-primary text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-opacity-90 transition flex items-center gap-2 text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Nuevo viaje
+      </a>
+    </div>
+
+    <!-- Estado: Cargando -->
+    <div id="state-loading" class="hidden flex flex-col items-center justify-center py-24 gap-4">
+      <svg class="animate-spin w-10 h-10 text-turquoise" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+      <p class="text-gray-500 text-sm">Cargando tus viajes…</p>
+    </div>
+
+    <!-- Estado: Vacío -->
+    <div id="state-empty" class="hidden flex flex-col items-center justify-center py-24 gap-4 text-center">
+      <div class="text-6xl">🗺️</div>
+      <h2 class="text-xl font-semibold text-primary">Aún no tienes viajes</h2>
+      <p class="text-gray-500 text-sm max-w-xs">Genera tu primer itinerario personalizado con IA y guárdalo aquí.</p>
+      <a href="crear-viaje.html"
+        class="mt-2 bg-primary text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-opacity-90 transition text-sm">
+        Crear mi primer viaje
+      </a>
+    </div>
+
+    <!-- Estado: Lista de viajes (mock) -->
+    <div id="state-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Las tarjetas se inyectan por mis-viajes.js -->
+    </div>
+
+    <!-- Estado: Error -->
+    <div id="state-error" class="hidden flex flex-col items-center justify-center py-24 gap-4 text-center">
+      <div class="text-5xl">⚠️</div>
+      <h2 class="text-xl font-semibold text-red-600">No se pudo cargar tus viajes</h2>
+      <p class="text-gray-500 text-sm">Ocurrió un error al conectar. Intenta de nuevo.</p>
+      <button onclick="MisViajes.cargar()"
+        class="mt-2 border-2 border-turquoise text-turquoise font-semibold px-6 py-2.5 rounded-lg hover:bg-turquoise hover:text-white transition text-sm">
+        Reintentar
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Demo helpers -->
+  <div class="text-center pb-6 space-x-3">
+    <button onclick="MisViajes.mostrarEstado('loading')" class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Cargando</button>
+    <button onclick="MisViajes.mostrarEstado('empty')"   class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Vacío</button>
+    <button onclick="MisViajes.mostrarEstado('list')"    class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Con viajes</button>
+    <button onclick="MisViajes.mostrarEstado('error')"   class="text-xs text-gray-400 hover:text-gray-600 underline">[Mock] Error</button>
+  </div>
+
+  <footer class="text-center text-xs text-gray-400 py-4">
+    TripGenius — Especialización Vibe Coding · DMC Institute
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/mock-store.js"></script>
+  <script src="js/mis-viajes.js"></script>
+</body>
+</html>

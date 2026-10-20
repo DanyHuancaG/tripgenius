@@ -1,0 +1,18 @@
+# Secretos y variables de entorno (nunca a Git)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local
+supabase/.temp/
+supabase/.branches/
+
+# Dependencias y builds
+node_modules/
+dist/
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

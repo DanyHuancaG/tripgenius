@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tripgenius/itinerary_schema.json",
+  "title": "Itinerario TripGenius",
+  "description": "Contrato del itinerario generado por la IA. En cada solicitud, la Edge Function fija destino y días con enum, minItems y maxItems (supabase/functions/generar-itinerario/esquema.ts). PostgreSQL vuelve a validarlo (private.validar_itinerario) y recalcula los totales.",
+  "type": "object",
+  "properties": {
+    "destino": { "type": "string", "description": "Destino del Perú, idéntico al solicitado." },
+    "dias": { "type": "integer", "minimum": 2, "maximum": 5 },
+    "itinerario": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "description": "Exactamente `dias` elementos, con dia = 1, 2, … en orden.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dia": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "actividades": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 7,
+            "description": "La IA genera entre 3 y 7. El servidor acepta entre 1 y 15.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hora_sugerida": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" },
+                "nombre": { "type": "string", "minLength": 1, "maxLength": 200 },
+                "descripcion": { "type": "string", "maxLength": 1000 },
+                "costo_estimado": { "type": ["number", "null"], "minimum": 0, "description": "PEN. null si no se puede estimar." },
+                "costo_no_estimado": { "type": "boolean", "description": "true si y solo si costo_estimado es null." }
+              },
+              "required": ["hora_sugerida", "nombre", "descripcion", "costo_estimado", "costo_no_estimado"]
+            }
+          }
+        },
+        "required": ["dia", "actividades"]
+      }
+    },
+    "nota_descargo": { "type": "string" }
+  },
+  "required": ["destino", "dias", "itinerario", "nota_descargo"],
+  "x-campos-del-servidor": {
+    "presupuesto_ingresado": "Lo añade completar_generacion desde la solicitud.",
+    "costo_total_estimado": "Suma de costos estimados calculada por el servidor. Los no estimados no suman.",
+    "advertencia_presupuesto": "true si costo_total_estimado > presupuesto_ingresado.",
+    "intereses": "Claves de la solicitud (cultura, aventura, gastronomia, naturaleza, familiar)."
+  }
+}

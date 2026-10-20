@@ -1,0 +1,7 @@
+# Configuración mínima de Supabase CLI para TripGenius.
+project_id = "slymqwtupzmhfifhhgzp"
+
+[functions.generar-itinerario]
+# El JWT se verifica dentro de la función con Supabase Auth (auth.getUser),
+# compatible con las claves nuevas (publishable) y con las de firma asimétrica.
+verify_jwt = false
