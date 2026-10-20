@@ -213,7 +213,7 @@ Chrome automatizado contra `https://danyhuancag.github.io/tripgenius/`, con `usu
 
 **Viaje de respaldo para la demo (condición 9):** el itinerario de Opus 5.5 se guardó con su token en la cuenta `usuario.e` → **Cusco, 3 días, 19 actividades, S/ 868** (`viaje_id 7836a5c8-…`).
 
-**Modelo activo tras la comparativa:** `claude-opus-5-5`, pendiente de la elección final del responsable. Se cambia con el secret `ANTHROPIC_MODEL`, sin tocar código.
+**Modelo elegido por el responsable (20 Oct 2026):** `claude-opus-5-5`, por la calidad del itinerario (alojamiento y entradas incluidos) con un costo real de unos US$ 0,045 por itinerario. Configurado en el secret `ANTHROPIC_MODEL`; se cambia sin tocar código.
 
 ## 9. Limitaciones conocidas al publicar
 

@@ -46,7 +46,7 @@ Reemplazar el itinerario simulado por uno generado con Gemini desde el servidor,
 | Esquema | `esquemaItinerarioClaude()`: `additionalProperties: false` y todo obligatorio; sin `minimum`, `maximum` ni `minItems` (no admitidos), que valida PostgreSQL |
 | Rechazos de seguridad | `stop_reason: refusal` → siguiente modelo. En Opus y Sonnet, además, respaldo del servidor de Anthropic (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`); no existe para Haiku |
 | Condición 7 | Antes de reservar cupo se verifica cada modelo (`models.retrieve` en Claude, `GET /models/{id}` en Gemini), sin consumir tokens |
-| Secrets | `ANTHROPIC_API_KEY` (cargado por el responsable; US$ 5 de prepago) y `ANTHROPIC_MODEL` |
+| Secrets | `ANTHROPIC_API_KEY` (cargado por el responsable; US$ 5 de prepago) y `ANTHROPIC_MODEL = claude-opus-5-5` (**elegido por el responsable** tras la comparativa) |
 | Sin cambios | Base de datos, RLS, token de un solo uso, límite de 5 al día y frontend |
 
 **Comparativa real (Cusco, 3 días, S/ 900, cultura y gastronomía; una generación por modelo):**
