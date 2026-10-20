@@ -1,6 +1,7 @@
 # TripGenius — Criterios de aceptación
 
 **DMC Institute — Sesión 1**  
+**Entregable:** E01-03 — Criterios de aceptación  
 **Estado:** Redactado para revisión  
 
 Criterios comprobables de las seis historias de usuario. La duración de **2 a 5 días** es una propuesta pendiente de confirmación, no una regla aprobada.
