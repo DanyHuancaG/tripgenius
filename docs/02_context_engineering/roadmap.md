@@ -7,7 +7,7 @@
 
 ---
 
-## Estado general
+## Estado general.
 
 ```
 ✅ Hito 1 — Frontend Mock        COMPLETADO
