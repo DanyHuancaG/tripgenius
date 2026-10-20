@@ -39,7 +39,7 @@ Genera un itinerario con estos datos:
 
 ## Seguridad frente a la manipulación del prompt
 
-El usuario **no envía texto libre**. Antes de llamar a Gemini, `iniciar_generacion` valida en PostgreSQL que:
+El usuario **no envía texto libre**. Antes de llamar a la IA, `iniciar_generacion` valida en PostgreSQL que:
 - el destino pertenezca a una lista cerrada del Perú;
 - los días sean un entero entre 2 y 5;
 - el presupuesto sea un número positivo;

@@ -1,4 +1,4 @@
-# Plan del Hito 3: IA integrada (Gemini)
+# Plan del Hito 3: IA integrada (Claude + Gemini de respaldo)
 
 > **Estado:** ✅ Completado — aprobado por el responsable (20 Oct 2026).
 > **Autorizaciones:** actividad 1 (migración); después, Edge Function + despliegue CLI + frontend; modelo de respaldo; ejecución directa en el proyecto principal.
@@ -8,7 +8,7 @@
 
 ## 1. Objetivo
 
-Reemplazar el itinerario simulado por uno generado con Gemini desde el servidor, validado y con límite de uso. Además, cerrar el pendiente del Hito 2: que solo se puedan guardar itinerarios generados de verdad por TripGenius.
+Reemplazar el itinerario simulado por uno generado con IA desde el servidor (Claude como principal y Gemini de respaldo; ver sección 2.1), validado y con límite de uso. Además, cerrar el pendiente del Hito 2: que solo se puedan guardar itinerarios generados de verdad por TripGenius.
 
 **Criterio de salida:** login → configurar → generar con IA real → visualizar → guardar → consultar.
 
@@ -17,7 +17,7 @@ Reemplazar el itinerario simulado por uno generado con Gemini desde el servidor,
 | # | Decisión | Valor aprobado |
 |---|---|---|
 | D-A | Integridad del guardado (C2) | **Opción A:** el servidor guarda el itinerario validado junto a un token de un solo uso. Para guardar, el cliente envía **solo el token** y la RPC recupera el itinerario original desde el servidor. La Edge Function `guardar-itinerario` deja de hacer falta |
-| D-B | P1: modelo | **Gemini 3.8 Flash**, sujeto a verificar disponibilidad, cuota y costo. Configurable con `GEMINI_MODEL` |
+| D-B | P1: modelo | **Claude `claude-opus-5-5`** como principal (`ANTHROPIC_MODEL`) y Gemini de respaldo (`GEMINI_MODEL`, `GEMINI_MODEL_RESPALDO`). Inicialmente se aprobó Gemini 3.8 Flash; modificado en la sección 2.1 |
 | D-C | P2: API Key | En Supabase Secrets, con rotación periódica |
 | D-D | Día del límite | Día calendario en `America/Lima` |
 | D-E | Fallback | Error controlado y reintento sin perder el formulario. **No** se usan itinerarios simulados como fallback |
@@ -64,7 +64,7 @@ Navegador ──(JWT)──► Edge Function generar-itinerario
                        │ 1. verifica el JWT (auth.getUser) → user_id
                        │ 2. rpc iniciar_generacion(user_id, solicitud)       [service_role]
                        │      advisory lock + conteo + reserva del cupo (C4)
-                       │ 3. verifica que el modelo esté habilitado, llama a Gemini (JSON + esquema)
+                       │ 3. verifica que el modelo esté habilitado, llama a Claude, con Gemini de respaldo (JSON + esquema)
                        │ 4. rpc completar_generacion(log_id, user_id, …)    [service_role]
                        │      valida → guarda itinerario + token + hash (C2)
 Navegador ◄── itinerario + token ──┘
@@ -101,7 +101,7 @@ Navegador ◄── itinerario + token ──┘
 - Volver a entrar → el detalle se conserva.
 
 **De error**
-- Gemini caído o con timeout → 503, mensaje claro y formulario conservado.
+- IA caída o con timeout (Claude y Gemini) → 503, mensaje claro y formulario conservado.
 - JSON inválido → 422 sin mostrar el itinerario.
 - Sin JWT → 401.
 
@@ -110,7 +110,7 @@ Navegador ◄── itinerario + token ──┘
 - RPC con la firma antigua (JSON del cliente) → no existe o no tiene permiso.
 - INSERT o UPDATE en `generaciones_log` desde el cliente → rechazado.
 - `iniciar_generacion` o `completar_generacion` invocadas por el cliente → rechazado.
-- La clave de Gemini no aparece en el frontend ni en Git.
+- Las claves de Anthropic y Gemini no aparecen en el frontend ni en Git.
 
 **Concurrencia (C4)**
 

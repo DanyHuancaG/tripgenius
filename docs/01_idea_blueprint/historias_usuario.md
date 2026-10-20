@@ -1,6 +1,7 @@
 # TripGenius — Historias de usuario
 
 **DMC Institute — Sesión 1**  
+**Entregable:** E01-02 — Historias de usuario  
 **Estado:** Redactado para revisión  
 **Cobertura:** Destinos turísticos del Perú  
 **Acceso:** Login obligatorio  
