@@ -1,4 +1,4 @@
-# TripGenius — Mapa de arquitectura del MVP
+# TripGenius — Mapa de arquitectura del MVP x
 
 **Sesión:** 01 — De una Idea a una Aplicación con Vibe Coding  
 **Entregable:** E01-05 — Mapa de arquitectura  
