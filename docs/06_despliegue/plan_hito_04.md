@@ -195,11 +195,32 @@ Chrome automatizado contra `https://danyhuancag.github.io/tripgenius/`, con `usu
 | Sin cambios en | Base de datos, RLS, Edge Function, token y límite diario |
 | Pruebas | 18/18 en Chrome simulando Pages. Sugerencias, aviso para "París", "Ciudad Inventada" y "asdfgh", normalización, bloqueo al enviar (sin llamada a la IA), envío con el nombre oficial y formulario conservado. La llamada a la IA se interceptó, sin consumir cupo. La lista del frontend es **idéntica** a la del servidor (62 = 62) |
 
+## 8.3 Cambio de alcance aprobado: Claude como proveedor de IA
+
+> **Aprobado por el responsable (20 Oct 2026).** Motivo: en las pruebas desde la URL pública, Gemini (nivel gratuito) devolvió 503 de forma repetida, también a otros usuarios. Detalle técnico en `docs/05_integracion_ia/plan_hito_03.md` (sección 2.1).
+
+- Solo cambia la Edge Function (`index.ts`, `esquema.ts`). Base de datos, RLS, token, límite diario y frontend sin cambios (condición 7).
+- La clave `ANTHROPIC_API_KEY` vive solo en Supabase Secrets; no está en el repositorio.
+- La respuesta 200 incluye `diagnostico: {modelo, tokens}`, sin datos sensibles, para medir el costo.
+
+**Pruebas reales desde la Edge Function (con origen de Pages):**
+
+| Modelo | Tiempo | Tokens (entrada / salida) | Costo real aprox. | Calidad observada |
+|---|---|---|---|---|
+| **Claude Opus 5.5** | 30,1 s | 1.655 / 1.892 | **US$ 0,045** | La más completa y realista: incluye alojamiento y entradas (boleto turístico); total S/ 868 de S/ 900 |
+| Claude Sonnet 5.5 | 16,1 s | 1.655 / 1.733 | US$ 0,021 | Muy buena y variada, pero no incluyó alojamiento; total S/ 690 |
+| Claude Haiku 5.5 | 11,6 s | 1.655 / 1.664 | US$ 0,001 | Correcta, pero con errores: puso S/ 0 en sitios que requieren boleto turístico (Catedral, Qorikancha, Pisac); total S/ 397, subestimado |
+
+**Viaje de respaldo para la demo (condición 9):** el itinerario de Opus 5.5 se guardó con su token en la cuenta `usuario.e` → **Cusco, 3 días, 19 actividades, S/ 868** (`viaje_id 7836a5c8-…`).
+
+**Modelo activo tras la comparativa:** `claude-opus-5-5`, pendiente de la elección final del responsable. Se cambia con el secret `ANTHROPIC_MODEL`, sin tocar código.
+
 ## 9. Limitaciones conocidas al publicar
 
 | Limitación | Efecto | Mitigación |
 |---|---|---|
 | Correo integrado de Supabase (unos 2 por hora) | Pocos usuarios pueden registrarse solos al día | Crear cuentas desde el panel con *Auto Confirm User*, o SMTP propio (fuera del alcance) |
-| Gemini en nivel gratuito | Saturación ocasional (503) | Modelo de respaldo + error controlado. Tener un viaje guardado para la demo |
+| Saldo de Anthropic (US$ 5 de prepago) | Con Opus 5.5, unos 110 itinerarios; con Sonnet, unos 240 | Si se agota, la función pasa sola a Gemini. Revisar el saldo en console.anthropic.com antes de la demo |
+| Gemini en nivel gratuito (ahora de respaldo) | Saturación frecuente (503) | Solo se usa si Claude falla |
 | Tailwind por CDN | Aviso en consola "should not be used in production" | Aceptable para un MVP académico; no afecta al funcionamiento |
 | Repositorio público | El código es visible | Sin secretos; la seguridad depende de Auth y RLS, no de ocultar el código |

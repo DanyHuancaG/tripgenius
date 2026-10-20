@@ -35,6 +35,28 @@ Reemplazar el itinerario simulado por uno generado con Gemini desde el servidor,
 > 8. Para las pruebas integradas, utiliza un entorno de desarrollo seguro. No ejecutes migraciones destructivas sin mostrarme antes el SQL.
 > 9. Conserva las pruebas del Hito 2 y añade pruebas de regresión para comprobar que la autenticación y el acceso por usuario siguen funcionando.
 
+## 2.1 Cambio de proveedor de IA (20 Oct 2026, durante el Hito 4)
+
+> **Decisión del responsable:** pasar a **Anthropic (Claude) como proveedor principal**, porque el nivel gratuito de Gemini se saturó de forma repetida (503 "high demand" en Flash-Lite y 3.8 Flash), también desde la URL pública con otros usuarios. Modifica **D6 / D-B**. Gemini se mantiene como respaldo automático.
+
+| Aspecto | Valor |
+|---|---|
+| Orden de modelos | `ANTHROPIC_MODEL` (Claude) → `GEMINI_MODEL` (`gemini-3.1-flash-lite`) → `GEMINI_MODEL_RESPALDO` (`gemini-3.8-flash`). Si uno falla (saturado, sin saldo, timeout, rechazo), pasa al siguiente; cuenta como 1 intento del cupo |
+| SDK | `npm:@anthropic-ai/sdk@0.131.0`, salida estructurada `output_config.format` (`json_schema`), `effort: low` |
+| Esquema | `esquemaItinerarioClaude()`: `additionalProperties: false` y todo obligatorio; sin `minimum`, `maximum` ni `minItems` (no admitidos), que valida PostgreSQL |
+| Rechazos de seguridad | `stop_reason: refusal` → siguiente modelo. En Opus y Sonnet, además, respaldo del servidor de Anthropic (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`); no existe para Haiku |
+| Condición 7 | Antes de reservar cupo se verifica cada modelo (`models.retrieve` en Claude, `GET /models/{id}` en Gemini), sin consumir tokens |
+| Secrets | `ANTHROPIC_API_KEY` (cargado por el responsable; US$ 5 de prepago) y `ANTHROPIC_MODEL` |
+| Sin cambios | Base de datos, RLS, token de un solo uso, límite de 5 al día y frontend |
+
+**Comparativa real (Cusco, 3 días, S/ 900, cultura y gastronomía; una generación por modelo):**
+
+| Modelo | Tiempo | Tokens (entrada / salida) | Costo real aprox. | Calidad observada |
+|---|---|---|---|---|
+| **Claude Opus 5.5** | 30,1 s | 1.655 / 1.892 | **US$ 0,045** | La más completa y realista: incluye alojamiento y entradas (boleto turístico); total S/ 868 de S/ 900 |
+| Claude Sonnet 5.5 | 16,1 s | 1.655 / 1.733 | US$ 0,021 | Muy buena y variada, pero no incluyó alojamiento; total S/ 690 |
+| Claude Haiku 5.5 | 11,6 s | 1.655 / 1.664 | US$ 0,001 | Correcta, pero con errores: puso S/ 0 en sitios que requieren boleto turístico (Catedral, Qorikancha, Pisac); total S/ 397, subestimado |
+
 ## 3. Arquitectura
 
 ```

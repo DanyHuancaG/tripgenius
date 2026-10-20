@@ -1,8 +1,8 @@
 /**
- * Edge Function: generar-itinerario — TripGenius (Hito 3)
+ * Edge Function: generar-itinerario — TripGenius (Hitos 3 y 4)
  *
  * POST { destino, dias, presupuesto, intereses } + Authorization: Bearer <JWT>
- *   200 { itinerario, token, expira_en, intentos_restantes }
+ *   200 { itinerario, token, expira_en, intentos_restantes, diagnostico }
  *   400 datos inválidos · 401 sesión no válida · 422 respuesta de IA inválida
  *   429 límite diario · 503 IA no disponible
  *
@@ -10,17 +10,24 @@
  *   1. verifica el JWT con Supabase Auth → user_id
  *   2. verifica qué modelos están habilitados (condición 7), antes de consumir cupo o tokens
  *   3. iniciar_generacion(): valida y reserva el cupo de forma atómica (C4)
- *   4. llama a Gemini (Interactions API) con un esquema JSON obligatorio:
- *      modelo principal y, si está saturado (429/500/503/timeout), el de respaldo
+ *   4. pide el itinerario con un esquema JSON obligatorio, en orden:
+ *      Claude (principal) → Gemini principal → Gemini respaldo.
+ *      Si uno falla (saturado, sin saldo, timeout, rechazo), pasa al siguiente.
  *   5. completar_generacion(): valida, guarda y emite un token de un solo uso (C2)
  *
- * Secrets: GEMINI_API_KEY (obligatorio); GEMINI_MODEL, GEMINI_MODEL_RESPALDO y
- * ALLOWED_ORIGINS (opcionales).
+ * Secrets: ANTHROPIC_API_KEY y/o GEMINI_API_KEY (al menos uno); ANTHROPIC_MODEL,
+ * GEMINI_MODEL, GEMINI_MODEL_RESPALDO y ALLOWED_ORIGINS (opcionales).
  * SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY los inyecta Supabase.
  */
 import { createClient } from 'npm:@supabase/supabase-js@2.49.4';
+import Anthropic from 'npm:@anthropic-ai/sdk@0.131.0';
 import { SYSTEM_PROMPT, instruccionUsuario } from './prompt.ts';
-import { esquemaItinerario } from './esquema.ts';
+import { esquemaItinerario, esquemaItinerarioClaude } from './esquema.ts';
+
+// Claude: proveedor principal desde el Hito 4 (decisión del responsable, 20 Oct 2026)
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+const ANTHROPIC_MODEL   = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-opus-5-5';
+const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY, maxRetries: 0 }) : null;
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
 const GEMINI_MODEL   = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
@@ -60,33 +67,108 @@ function responder(status: number, body: unknown, origin: string | null) {
   });
 }
 
-// ── Gemini ───────────────────────────────────────────────────────────────────
+// ── Modelos disponibles ──────────────────────────────────────────────────────
 
-// Condición 7: cada modelo debe existir y estar habilitado para la API Key.
+type Solicitud = { destino: string; dias: number; presupuesto: number; intereses: string[] };
+type Resultado =
+  | { tipo: 'ok'; json: unknown; modeloReal?: string; uso?: { entrada: number; salida: number } }
+  | { tipo: 'fallo_proveedor'; detalle: string; reintentable?: boolean }
+  | { tipo: 'fallo_validacion'; detalle: string };
+type Modelo = { id: string; llamar: (s: Solicitud, timeoutMs: number) => Promise<Resultado> };
+
+// Condición 7: cada modelo debe existir y estar habilitado para su API Key.
 // Se consulta una vez por instancia (no consume tokens); solo se recuerdan los éxitos.
 const modelosVerificados = new Set<string>();
 
-async function verificarModelo(modelo: string): Promise<boolean> {
-  if (modelosVerificados.has(modelo)) return true;
+async function verificarGemini(modelo: string): Promise<boolean> {
   try {
     const r = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(modelo)}`, {
       headers: { 'x-goog-api-key': GEMINI_API_KEY },
       signal: AbortSignal.timeout(8_000),
     });
-    if (r.ok) modelosVerificados.add(modelo);
-    else console.error(`Modelo ${modelo} no disponible: HTTP ${r.status}`);
+    if (!r.ok) console.error(`Modelo ${modelo} no disponible: HTTP ${r.status}`);
+    return r.ok;
   } catch (e) {
     console.error(`No se pudo verificar el modelo ${modelo}:`, (e as Error).message);
+    return false;
   }
-  return modelosVerificados.has(modelo);
 }
 
-/** Modelos habilitados, en orden de preferencia: principal y luego respaldo */
-async function modelosDisponibles(): Promise<string[]> {
-  const candidatos = [...new Set([GEMINI_MODEL, GEMINI_MODEL_RESPALDO].filter(Boolean))];
-  const ok = await Promise.all(candidatos.map(verificarModelo));
-  return candidatos.filter((_, i) => ok[i]);
+async function verificarClaude(modelo: string): Promise<boolean> {
+  try {
+    await anthropic!.models.retrieve(modelo, {}, { timeout: 8_000 });
+    return true;
+  } catch (e) {
+    console.error(`Modelo ${modelo} no disponible:`, (e as Error).message);
+    return false;
+  }
 }
+
+async function verificar(id: string, comprobar: (id: string) => Promise<boolean>): Promise<boolean> {
+  if (modelosVerificados.has(id)) return true;
+  if (await comprobar(id)) modelosVerificados.add(id);
+  return modelosVerificados.has(id);
+}
+
+/** Modelos habilitados, en orden de preferencia: Claude → Gemini principal → Gemini respaldo */
+async function modelosDisponibles(): Promise<Modelo[]> {
+  const candidatos: { modelo: Modelo; comprobar: (id: string) => Promise<boolean> }[] = [];
+  if (anthropic) {
+    candidatos.push({ modelo: { id: ANTHROPIC_MODEL, llamar: (s, t) => llamarClaude(s, ANTHROPIC_MODEL, t) }, comprobar: verificarClaude });
+  }
+  if (GEMINI_API_KEY) {
+    for (const id of new Set([GEMINI_MODEL, GEMINI_MODEL_RESPALDO].filter(Boolean))) {
+      candidatos.push({ modelo: { id, llamar: (s, t) => llamarGeminiUnaVez(s, id, t) }, comprobar: verificarGemini });
+    }
+  }
+  const ok = await Promise.all(candidatos.map(c => verificar(c.modelo.id, c.comprobar)));
+  return candidatos.filter((_, i) => ok[i]).map(c => c.modelo);
+}
+
+// ── Claude ───────────────────────────────────────────────────────────────────
+
+async function llamarClaude(s: Solicitud, modelo: string, timeoutMs: number): Promise<Resultado> {
+  // Respaldo del servidor de Anthropic ante rechazos de seguridad: no existe para Haiku
+  const conFallback = !modelo.startsWith('claude-haiku');
+  const params: Record<string, unknown> = {
+    model: modelo,
+    max_tokens: 16000,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: instruccionUsuario(s) }],
+    output_config: {
+      effort: 'low',   // tarea acotada: menos razonamiento = respuesta más rápida
+      format: { type: 'json_schema', schema: esquemaItinerarioClaude(s.destino, s.dias) },
+    },
+    ...(conFallback ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}),
+  };
+
+  let r: any;
+  try {
+    // deno-lint-ignore no-explicit-any
+    r = await anthropic!.beta.messages.create(params as any, { timeout: timeoutMs });
+  } catch (e) {
+    const err = e as { status?: number; message?: string };
+    // Cualquier fallo (saturado, sin saldo, timeout, red) → se prueba el siguiente modelo
+    return { tipo: 'fallo_proveedor', detalle: `HTTP ${err.status ?? 'red/timeout'}: ${(err.message ?? '').slice(0, 200)}`, reintentable: true };
+  }
+
+  if (r.stop_reason === 'refusal' || r.stop_reason === 'max_tokens') {
+    return { tipo: 'fallo_proveedor', detalle: `stop_reason ${r.stop_reason}`, reintentable: true };
+  }
+  const texto = (r.content ?? []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+  try {
+    return {
+      tipo: 'ok',
+      json: JSON.parse(texto),
+      modeloReal: r.model,
+      uso: { entrada: r.usage?.input_tokens ?? 0, salida: r.usage?.output_tokens ?? 0 },
+    };
+  } catch {
+    return { tipo: 'fallo_proveedor', detalle: 'JSON no parseable', reintentable: true };
+  }
+}
+
+// ── Gemini ───────────────────────────────────────────────────────────────────
 
 /** Texto generado: esquema actual (steps) o el anterior (outputs) */
 function extraerTexto(data: any): string | null {
@@ -106,32 +188,27 @@ function extraerTexto(data: any): string | null {
   return null;
 }
 
-type Solicitud = { destino: string; dias: number; presupuesto: number; intereses: string[] };
-type ResultadoGemini =
-  | { tipo: 'ok'; json: unknown }
-  | { tipo: 'fallo_proveedor'; detalle: string; reintentable?: boolean }
-  | { tipo: 'fallo_validacion'; detalle: string };
-
 /**
- * Prueba los modelos en orden: si uno está saturado o falla la red (429, 500,
- * 503, timeout), pasa al siguiente. Todo cuenta como un solo intento del cupo.
+ * Prueba los modelos en orden: si uno está saturado o falla (429, 500, 503,
+ * timeout, sin saldo), pasa al siguiente. Todo cuenta como un solo intento del cupo.
  * Devuelve el resultado y el modelo que lo produjo (se registra en el log).
  */
-async function llamarGemini(s: Solicitud, modelos: string[]): Promise<{ resultado: ResultadoGemini; modelo: string }> {
-  let resultado: ResultadoGemini = { tipo: 'fallo_proveedor', detalle: 'sin modelos' };
-  let modelo = modelos[0];
+async function generar(s: Solicitud, modelos: Modelo[]): Promise<{ resultado: Resultado; modelo: string }> {
+  let resultado: Resultado = { tipo: 'fallo_proveedor', detalle: 'sin modelos' };
+  let modelo = modelos[0].id;
   const limite = Date.now() + PRESUPUESTO_TOTAL;
-  for (modelo of modelos) {
+  for (const m of modelos) {
     const restante = Math.min(TIMEOUT_MS, limite - Date.now());
     if (restante < 10_000) break;   // no queda tiempo útil para otro modelo
-    resultado = await llamarGeminiUnaVez(s, modelo, restante);
+    modelo = m.id;
+    resultado = await m.llamar(s, restante);
     if (resultado.tipo !== 'fallo_proveedor' || !resultado.reintentable) break;
-    console.warn(`Gemini ${modelo} saturado o sin respuesta (${resultado.detalle.slice(0, 120)})`);
+    console.warn(`${modelo} saturado o sin respuesta (${resultado.detalle.slice(0, 160)})`);
   }
   return { resultado, modelo };
 }
 
-async function llamarGeminiUnaVez(s: Solicitud, modelo: string, timeoutMs: number): Promise<ResultadoGemini> {
+async function llamarGeminiUnaVez(s: Solicitud, modelo: string, timeoutMs: number): Promise<Resultado> {
   let r: Response;
   try {
     r = await fetch(`${GEMINI_BASE}/interactions`, {
@@ -205,7 +282,7 @@ Deno.serve(async (req) => {
   }
 
   // 2. Modelos habilitados (antes de consumir cupo o tokens)
-  const modelos = GEMINI_API_KEY ? await modelosDisponibles() : [];
+  const modelos = await modelosDisponibles();
   if (modelos.length === 0) {
     return responder(503, { error: 'El servicio de IA no está disponible. Intenta más tarde.' }, origin);
   }
@@ -225,9 +302,14 @@ Deno.serve(async (req) => {
     return responder(500, { error: 'No se pudo iniciar la generación.' }, origin);
   }
 
-  // 4. Gemini
-  const { resultado, modelo } = await llamarGemini(s, modelos);
-  if (resultado.tipo !== 'ok') console.error(`Gemini ${resultado.tipo} (${modelo}): ${resultado.detalle}`);
+  // 4. IA: Claude → Gemini
+  const { resultado, modelo: modeloPedido } = await generar(s, modelos);
+  if (resultado.tipo !== 'ok') console.error(`IA ${resultado.tipo} (${modeloPedido}): ${resultado.detalle}`);
+  // Si el servidor de Anthropic usó su respaldo, se registra el modelo que respondió
+  const modelo = (resultado.tipo === 'ok' && resultado.modeloReal) || modeloPedido;
+  if (resultado.tipo === 'ok' && resultado.uso) {
+    console.log(`IA ok: ${modelo} · tokens entrada ${resultado.uso.entrada} · salida ${resultado.uso.salida}`);
+  }
 
   // 5. Registrar resultado (y validar + emitir token si fue exitoso)
   const { data: fin, error: finErr } = await admin.rpc('completar_generacion', {
@@ -256,5 +338,7 @@ Deno.serve(async (req) => {
     token: fin.token,
     expira_en: fin.expira_en,
     intentos_restantes: restantes,
+    // Sin datos sensibles: modelo que respondió y tokens usados (para medir costo)
+    diagnostico: { modelo, tokens: resultado.tipo === 'ok' ? resultado.uso ?? null : null },
   }, origin);
 });

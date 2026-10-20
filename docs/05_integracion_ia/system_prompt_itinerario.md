@@ -6,8 +6,8 @@
 
 | Parámetro | Valor |
 |---|---|
-| API | Gemini Interactions API (`POST /v1beta/interactions`) |
-| Modelo | Principal `gemini-3.1-flash-lite` (secret `GEMINI_MODEL`) y respaldo `gemini-3.8-flash` (secret `GEMINI_MODEL_RESPALDO`). En el código, los valores por defecto son 3.8 Flash y 3.6 Flash; los secrets los sobrescriben |
+| API | **Principal:** Anthropic Messages API (`@anthropic-ai/sdk`), `output_config.format` json_schema, `effort: low`. **Respaldo:** Gemini Interactions API (`POST /v1beta/interactions`) |
+| Modelo | Claude `claude-opus-5-5` (secret `ANTHROPIC_MODEL`) → Gemini: principal `gemini-3.1-flash-lite` (secret `GEMINI_MODEL`) y respaldo `gemini-3.8-flash` (secret `GEMINI_MODEL_RESPALDO`). En el código, los valores por defecto son 3.8 Flash y 3.6 Flash; los secrets los sobrescriben |
 | Salida | `response_format`: `application/json` con el esquema de `esquema.ts` (destino y días fijados con enum) |
 | `max_output_tokens` | 8192. Mitiga los bucles de repetición reportados en la salida estructurada |
 | `thinking_level` | `low`, para reducir latencia y costo |

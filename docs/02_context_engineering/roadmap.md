@@ -166,6 +166,7 @@ Flujo completo con IA real: login → configurar → generar → visualizar → 
 - [x] **P3:** GitHub Pages (`https://danyhuancag.github.io/tripgenius/`), repositorio público `DanyHuancaG/tripgenius`
 - [x] GitHub Actions publica solo `src/`, con permisos mínimos
 - [x] **Cambio de alcance aprobado:** autocompletado y validación inmediata del destino (plan, sección 8.2)
+- [x] **Cambio de proveedor aprobado:** Claude (Anthropic) como principal y Gemini de respaldo, por la saturación de Gemini gratuito (plan, sección 8.3)
 
 ### Tareas
 - [x] Inicializar repositorio Git
@@ -177,10 +178,11 @@ Flujo completo con IA real: login → configurar → generar → visualizar → 
 - [x] Deploy y verificación de la URL pública (carga, rutas, solo `src/`)
 - [ ] Smoke test completo end-to-end:
   - [x] Sin sesión → login · credenciales incorrectas · login · seguridad por API (8/8)
-  - [ ] Generar con Gemini → guardar → cerrar sesión → volver → consultar (Gemini saturado: 503 controlado)
+  - [x] Generación real con Claude desde la Edge Function: Opus 30 s, Sonnet 16 s, Haiku 12 s (comparativa en el plan, sección 8.3)
+  - [ ] Flujo en el navegador desde la URL pública: generar → guardar → cerrar sesión → volver → consultar
   - [ ] Registro + confirmación de correo (límite de correos de Supabase)
   - [x] Un usuario no puede ver los datos de otro
-- [ ] Viaje real guardado como respaldo para el Demo Day
+- [x] Viaje real guardado como respaldo para el Demo Day (Cusco, 3 días, Opus 5.5, cuenta `usuario.e`)
 - [ ] Cambiar la contraseña de `usuario.e` al terminar las pruebas
 
 ### Criterio de salida

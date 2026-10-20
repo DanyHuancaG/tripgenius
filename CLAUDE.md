@@ -27,7 +27,7 @@ No inventes requerimientos ni cambies el alcance sin consultar al responsable.
 ## Tecnologías de referencia del curso
 - UI: HTML5, Tailwind CSS, JavaScript.
 - Datos y autenticación: Supabase, PostgreSQL, Supabase Auth y RLS.
-- IA: proveedor por elegir; llamada solo desde backend seguro o función server-side.
+- IA: Claude (Anthropic) como principal y Gemini de respaldo, llamados solo desde la Edge Function `generar-itinerario` (server-side).
 - Versionado/publicación: GitHub y Vercel (u hosting compatible).
 
 ## Reglas de diseño
@@ -62,6 +62,6 @@ No afirmar que algo está probado sin ejecutar la prueba correspondiente. En cas
 - Sesión 2: contexto y plan de arquitectura aprobados (`docs/02_context_engineering/plan_arquitectura.md`, v3 con condiciones C1–C4).
 - Hito 1 — Frontend Mock: ✅ completado (`docs/03_frontend/plan_hito1.md`).
 - Hito 2 — Supabase (Auth, tablas, RLS, RPC): ✅ completado (`docs/04_backend_supabase/plan_hito2.md`).
-- Hito 3 — IA con Gemini (Edge Function, token de un solo uso, límite de 5 al día): ✅ completado (`docs/05_integracion_ia/plan_hito_03.md`).
+- Hito 3 — IA integrada (Edge Function, token de un solo uso, límite de 5 al día): ✅ completado (`docs/05_integracion_ia/plan_hito_03.md`). Desde el Hito 4, Claude es el proveedor principal y Gemini el de respaldo.
 - Hito 4 — GitHub y publicación en GitHub Pages: en curso (`docs/06_despliegue/plan_hito_04.md`).
 - Seguimiento general: `docs/02_context_engineering/roadmap.md`.
