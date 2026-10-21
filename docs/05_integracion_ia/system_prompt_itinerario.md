@@ -4,14 +4,36 @@
 
 ## Configuración
 
+El mismo prompt (`SYSTEM_PROMPT` e `instruccionUsuario`) se envía a todos los modelos. Orden de uso: **Claude (principal) → Gemini principal → Gemini respaldo**. Si un modelo falla (saturado, sin saldo, timeout, rechazo o JSON no parseable), se prueba el siguiente; todo cuenta como un solo intento del cupo diario.
+
+### Claude (principal, desde el Hito 4)
+
 | Parámetro | Valor |
 |---|---|
-| API | **Principal:** Anthropic Messages API (`@anthropic-ai/sdk`), `output_config.format` json_schema, `effort: low`. **Respaldo:** Gemini Interactions API (`POST /v1beta/interactions`) |
-| Modelo | Claude `claude-opus-5-5` (secret `ANTHROPIC_MODEL`) → Gemini: principal `gemini-3.1-flash-lite` (secret `GEMINI_MODEL`) y respaldo `gemini-3.8-flash` (secret `GEMINI_MODEL_RESPALDO`). En el código, los valores por defecto son 3.8 Flash y 3.6 Flash; los secrets los sobrescriben |
-| Salida | `response_format`: `application/json` con el esquema de `esquema.ts` (destino y días fijados con enum) |
+| API | Anthropic Messages API (`@anthropic-ai/sdk`, `beta.messages.create`) |
+| Modelo | `claude-opus-5-5` (secret `ANTHROPIC_MODEL`; ese es también el valor por defecto en el código) |
+| Salida | `output_config.format`: `json_schema` con `esquemaItinerarioClaude` de `esquema.ts` (destino y días fijados con enum) |
+| `max_tokens` | 16000 |
+| `effort` | `low`: tarea acotada, menos razonamiento y respuesta más rápida |
+| Respaldo del servidor | `fallbacks: 'default'` (beta `server-side-fallback-2026-07-01`) ante rechazos de seguridad; no se usa con Haiku. Se registra el modelo que respondió de verdad |
+| Fallo | `refusal`, `max_tokens`, error HTTP/red o JSON no parseable → pasa a Gemini |
+
+### Gemini (respaldo)
+
+| Parámetro | Valor |
+|---|---|
+| API | Gemini Interactions API (`POST /v1beta/interactions`) |
+| Modelos | Principal `gemini-3.1-flash-lite` (secret `GEMINI_MODEL`) y respaldo `gemini-3.8-flash` (secret `GEMINI_MODEL_RESPALDO`). En el código, los valores por defecto son 3.8 Flash y 3.6 Flash; los secrets los sobrescriben |
+| Salida | `response_format`: `application/json` con `esquemaItinerario` de `esquema.ts` (destino y días fijados con enum) |
 | `max_output_tokens` | 8192. Mitiga los bucles de repetición reportados en la salida estructurada |
 | `thinking_level` | `low`, para reducir latencia y costo |
 | `store` | `false`: Google no guarda la interacción |
+
+### Común
+
+| Parámetro | Valor |
+|---|---|
+| Verificación previa | Antes de reservar cupo, se comprueba que cada modelo exista y esté habilitado para su API Key (sin consumir tokens) |
 | Timeout | Hasta 60 s por modelo, con un presupuesto total de 110 s (límite de las Edge Functions: 150 s) |
 | CORS (`ALLOWED_ORIGINS`) | `http://127.0.0.1:5500`, `http://localhost:5500` y `http://<IP de la red local>:5500` (acceso desde otros equipos de la red local, 20 Oct 2026). Al publicar (Hito 4) se añade la URL pública |
 
