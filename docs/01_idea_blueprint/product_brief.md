@@ -1,4 +1,4 @@
-# PRODUCT BRIEF — TRIPGENIUS
+# PRODUCT BRIEF — TRIPGENIUS xx
 
 **Proyecto:** TripGenius  
 **Eslogan:** Planifica viajes inteligentes con IA  
