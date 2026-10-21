@@ -1,5 +1,6 @@
 /**
- * Prompt de sistema e instrucción de usuario para Gemini.
+ * Prompt de sistema e instrucción de usuario, comunes a Claude (principal)
+ * y a Gemini (respaldo).
  * Documentado en docs/05_integracion_ia/system_prompt_itinerario.md.
  *
  * Todos los valores que llegan al prompt ya fueron validados en el servidor
